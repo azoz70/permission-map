@@ -1,5 +1,9 @@
 # PERMISSION MAP
 
+[![tests](https://github.com/azoz70/permission-map/actions/workflows/tests.yml/badge.svg)](https://github.com/azoz70/permission-map/actions/workflows/tests.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 **Local-first access intelligence & review engine.**
 
 PERMISSION MAP analyzes access permissions, maps relationships between users,
@@ -26,6 +30,28 @@ cloud, no subscriptions, no telemetry.
 - **Beautiful CLI** — a branded terminal experience with a fixed block-letter
   logo, an interactive menu, panels, tables and a live dashboard, powered by
   Typer + Rich.
+
+## Screenshots
+
+### Startup dashboard
+![Startup dashboard](docs/screenshots/01-startup.png)
+
+### Import with validation
+![Import result](docs/screenshots/05-import.png)
+
+### Users and privileged accounts
+![List users](docs/screenshots/02-list-users.png)
+
+### Roles with automatic type detection
+![List roles](docs/screenshots/03-list-roles.png)
+
+### User → group memberships
+![List memberships](docs/screenshots/04-list-memberships.png)
+
+### Command reference
+![Help](docs/screenshots/06-help.png)
+
+> Regenerate with `python scripts/make_screenshots.py`.
 
 ## Technology
 
