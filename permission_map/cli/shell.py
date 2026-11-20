@@ -29,6 +29,8 @@ from permission_map import (
 from permission_map.cli.dashboard import render_app_banner, render_dashboard
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list
+from permission_map.cli.map_view import render_map_summary, render_user_map
+from permission_map.core.graph_engine import PermissionGraph
 from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import Database
 from permission_map.database.repositories import fetch_records
@@ -83,6 +85,10 @@ def render_help(console: Console) -> None:
     table.add_row("import <file>", "Import and validate a CSV file")
     table.add_row("  --type <entity>", "Force the entity type")
     table.add_row("  --map <field>=<col>", "Map a source column to a field")
+
+    section("MAP ACCESS")
+    table.add_row("map", "Map users, groups, roles and permissions")
+    table.add_row("map <user>", "Show a user's effective permissions and why")
 
     section("VIEW DATA")
     table.add_row("list users", "Show all users")
@@ -212,6 +218,17 @@ def handle_command(
         else:
             render_list(console, canonical, fetch_records(db, canonical))
         return True
+
+    if command == "map" or command.startswith("map "):
+        target = raw_command.split(" ", 1)[1].strip() if " " in raw_command else ""
+        graph = PermissionGraph(db)
+        if not target:
+            render_map_summary(console, graph)
+        elif not graph.has_user(target):
+            console.print(Text(f"Unknown user '{target}'.", style=WARN_STYLE), justify="center")
+        else:
+            render_user_map(console, graph, target)
+        return True
     if command in _PHASE:
         label = dict(MENU_ITEMS)[command]
         line = Text.assemble(
@@ -242,7 +259,7 @@ def run_shell(
     render_app_banner(console, db)
     render_menu(console)
     console.print(
-        Text("Type 'help' for commands, 'list users' for data, '0' to exit.", style=MUTED_STYLE),
+        Text("Type 'help' for commands, 'map' to explore access, '0' to exit.", style=MUTED_STYLE),
         justify="center",
     )
     console.print("")

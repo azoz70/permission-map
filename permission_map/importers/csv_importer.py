@@ -33,13 +33,24 @@ from permission_map.utils.validators import (
     validate_required,
 )
 
-# Entity -> identifier field used for within-file duplicate detection.
-KEY_FIELD = {
+# Entity -> field that maps to the generic "external_id" column.
+KEY_FIELD: dict[str, str] = {
     "users": "user_id",
     "groups": "group_id",
     "roles": "role_id",
     "resources": "resource_id",
     "permissions": "permission_id",
+}
+
+# Entity -> identifier field(s) used for within-file duplicate detection.
+DUP_KEY: dict[str, str | tuple[str, ...]] = {
+    "users": "user_id",
+    "groups": "group_id",
+    "roles": "role_id",
+    "resources": "resource_id",
+    "permissions": "permission_id",
+    "role_assignments": ("role_id", "group_id", "user_id"),
+    "role_permissions": ("role_id", "permission_id"),
 }
 
 _REFERENCE_ENTITIES = ("users", "groups", "roles", "resources", "permissions")
@@ -167,8 +178,19 @@ def import_csv(
 
     result.issues.extend(validate_required(records, entity))
 
-    if entity in KEY_FIELD:
-        result.issues.extend(validate_duplicates(records, entity, KEY_FIELD[entity]))
+    if entity == "role_assignments":
+        for index, record in enumerate(records, start=2):
+            if not record.get("group_id") and not record.get("user_id"):
+                result.issues.append(
+                    Issue(
+                        "error",
+                        "role assignment must target a group_id or a user_id",
+                        row=index,
+                    )
+                )
+
+    if entity in DUP_KEY:
+        result.issues.extend(validate_duplicates(records, entity, DUP_KEY[entity]))
 
     existing = {name: existing_ids(db, name) for name in _REFERENCE_ENTITIES}
     result.issues.extend(validate_references(records, entity, existing))

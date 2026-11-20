@@ -40,6 +40,13 @@ _COLUMNS: dict[str, tuple[tuple[str, str], ...]] = {
         ("action", "Action"),
     ),
     "memberships": (("user_id", "User"), ("group_id", "Group")),
+    "role_assignments": (
+        ("role_id", "Role"),
+        ("group_id", "Group"),
+        ("user_id", "User"),
+        ("direct", "Direct"),
+    ),
+    "role_permissions": (("role_id", "Role"), ("permission_id", "Permission")),
 }
 
 _BOOLEAN_KEYS = {"is_privileged", "is_admin"}
@@ -76,6 +83,8 @@ def _ellipsize(value: str, max_length: int = 28) -> str:
 def _format_cell(key: str, value: object) -> str | Text:
     if key in _BOOLEAN_KEYS:
         return Text("yes", style=_PRIVILEGED_STYLE) if value else Text("no", style=MUTED_STYLE)
+    if key == "direct":
+        return Text("yes" if value else "no", style=WHITE)
     if key == "role_type":
         if not value:
             return "—"

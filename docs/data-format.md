@@ -13,6 +13,11 @@ of assuming fixed headers.
 | `roles.csv`     | `role_id, name, description, is_admin`                         |
 | `permissions.csv` | `permission_id, resource_id, name, action`                   |
 | `memberships.csv` | `user_id, group_id`                                          |
+| `role_assignments.csv` | `role_id, group_id, user_id, direct`                   |
+| `role_permissions.csv` | `role_id, permission_id`                               |
+
+A role assignment targets **either** a group (`group_id`) or a user
+(`user_id`); at least one is required. `direct` marks user-level assignments.
 
 - `user_id`, `group_id`, `role_id`, `permission_id`, `resource_id` are stable
   external identifiers used to link records across files.

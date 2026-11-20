@@ -13,7 +13,7 @@ from pathlib import Path
 
 from permission_map.utils import config
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # Order matters: parent tables must be created before tables that reference
 # them with foreign keys.
@@ -98,6 +98,13 @@ _SCHEMA: tuple[str, ...] = (
         direct    INTEGER NOT NULL DEFAULT 0,
         source    TEXT,
         imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS role_permissions (
+        role_id       INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+        permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+        PRIMARY KEY (role_id, permission_id)
     )
     """,
     """

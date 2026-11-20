@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-11-20
+
+### Added
+
+- Identity & permission graph engine (`core/graph_engine.py`): user → group →
+  role → permission, with effective-permission resolution and grant paths.
+- `permission-map map` — access-graph summary, role map and privileged users.
+- `permission-map map --user <id>` — a user's effective permissions and the
+  exact path that grants each one (direct vs. inherited).
+- Import support for `role_assignments.csv` and `role_permissions.csv`,
+  including reference and duplicate validation.
+- Role-type-aware privilege inference (admin/privileged roles or admin
+  permissions), replacing reliance on the source flag alone.
+- `role_permissions` table (schema v3) with safe migrations.
+- New example files and graph tests (56 tests total).
+
 ## [0.1.0] - 2026-11-20
 
 ### Added

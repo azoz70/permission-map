@@ -20,6 +20,8 @@ permission-map --help          # list all commands and examples
 permission-map import examples/users.csv     # import + validate a CSV
 permission-map list users      # view imported records as a table
 permission-map list memberships # view user ↔ group relationships
+permission-map map             # access-graph summary, role map, privileged users
+permission-map map --user u-1002  # one user's effective permissions and why
 permission-map dashboard       # non-interactive dashboard with live database status
 permission-map version         # print the installed version
 permission-map help            # command reference
@@ -39,6 +41,7 @@ permission-map
 permission-map > import examples/users.csv
 permission-map > list users
 permission-map > list roles
+permission-map > map
 permission-map > 0
 ```
 
@@ -64,6 +67,8 @@ permission-map import examples/groups.csv
 permission-map import examples/roles.csv
 permission-map import examples/permissions.csv
 permission-map import examples/memberships.csv
+permission-map import examples/role_permissions.csv
+permission-map import examples/role_assignments.csv
 ```
 
 Override the detected type or map non-standard column names:
@@ -77,8 +82,20 @@ Every import is validated before it is written: missing fields, invalid values,
 duplicate identifiers and unknown references are reported, and a file with
 errors is never partially imported.
 
-Data import, analysis, mapping, comparison, review and reporting commands are
-added in subsequent development phases.
+## Mapping access
+
+`role_permissions.csv` links roles to permissions and `role_assignments.csv`
+assigns roles to groups or directly to users. Together with memberships they
+form the access graph `user → group → role → permission`.
+
+```bash
+permission-map map                 # graph summary + role map + privileged users
+permission-map map --user u-1002   # effective permissions and the path that grants each
+```
+
+The user view shows whether each grant is **direct** (role assigned to the user)
+or **inherited** (via a group), plus the exact chain, e.g.
+`g-itops → r-admin → p-aws-admin`.
 
 ## Configuration
 

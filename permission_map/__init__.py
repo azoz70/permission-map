@@ -11,7 +11,7 @@ read-only analysis of imported access data.
 from __future__ import annotations
 
 __app_name__ = "PERMISSION MAP"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Abdulaziz Alshehri"
 __author_linkedin__ = "https://www.linkedin.com/in/abdulaziz-alshehri/"
 __linkedin_display__ = "linkedin.com/in/abdulaziz-alshehri"

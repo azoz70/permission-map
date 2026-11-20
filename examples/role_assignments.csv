@@ -1,0 +1,7 @@
+role_id,group_id,user_id,direct
+r-viewer,g-eng,,false
+r-developer,g-eng,,false
+r-finance-reader,g-finance,,false
+r-admin,g-itops,,false
+r-security-analyst,g-security,,false
+r-admin,,u-1008,true

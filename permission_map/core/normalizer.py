@@ -18,6 +18,8 @@ FIELDS: dict[str, tuple[str, ...]] = {
     "resources": ("resource_id", "name", "resource_type"),
     "permissions": ("permission_id", "resource_id", "name", "action"),
     "memberships": ("user_id", "group_id"),
+    "role_assignments": ("role_id", "group_id", "user_id", "direct"),
+    "role_permissions": ("role_id", "permission_id"),
 }
 
 # Fields that must be present (and non-empty) for an entity to be importable.
@@ -28,6 +30,8 @@ REQUIRED: dict[str, tuple[str, ...]] = {
     "resources": ("resource_id",),
     "permissions": ("permission_id", "resource_id"),
     "memberships": ("user_id", "group_id"),
+    "role_assignments": ("role_id",),
+    "role_permissions": ("role_id", "permission_id"),
 }
 
 # Accepted synonyms for each canonical field (matched case/whitespace-insensitively).
@@ -50,6 +54,7 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "description": ("description", "desc", "notes"),
     "resource_type": ("resource_type", "resource type", "type", "kind"),
     "action": ("action", "access", "access level", "privilege"),
+    "direct": ("direct", "direct assignment", "is_direct", "isdirect"),
 }
 
 # Filename stems that unambiguously identify an entity.
@@ -67,8 +72,13 @@ STEM_TO_ENTITY: dict[str, str] = {
     "memberships": "memberships",
     "membership": "memberships",
     "role_assignments": "role_assignments",
+    "role_assignment": "role_assignments",
     "roleassignment": "role_assignments",
     "role-assignments": "role_assignments",
+    "role_permissions": "role_permissions",
+    "role_permission": "role_permissions",
+    "rolepermissions": "role_permissions",
+    "role-permissions": "role_permissions",
 }
 
 CANONICAL_STATUSES = {"active", "suspended", "disabled", "left"}
@@ -77,6 +87,7 @@ CANONICAL_STATUSES = {"active", "suspended", "disabled", "left"}
 BOOL_FIELDS: dict[str, tuple[str, ...]] = {
     "users": ("is_privileged",),
     "roles": ("is_admin",),
+    "role_assignments": ("direct",),
 }
 
 _TRUE_VALUES = {"true", "1", "yes", "y", "on", "t"}

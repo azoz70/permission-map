@@ -15,7 +15,9 @@ from permission_map import __app_name__, __description__, __version__
 from permission_map.cli.dashboard import render_dashboard
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list
+from permission_map.cli.map_view import render_map_summary, render_user_map
 from permission_map.cli.shell import render_help, run_shell
+from permission_map.core.graph_engine import PermissionGraph
 from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import get_database
 from permission_map.database.repositories import fetch_records
@@ -35,6 +37,8 @@ app = typer.Typer(
         "  permission-map import examples/users.csv\n"
         "  permission-map import data.csv --type users\n"
         "  permission-map import data.csv --map user_id=Username\n"
+        "  permission-map map\n"
+        "  permission-map map --user u-1002\n"
         "  permission-map dashboard\n"
         "  permission-map version\n"
         "  permission-map --help"
@@ -105,6 +109,25 @@ def list_data(
         )
         raise typer.Exit(1)
     render_list(console, canonical, fetch_records(database, canonical))
+
+
+@app.command("map")
+def map_access(
+    user: str | None = typer.Option(
+        None, "--user", "-u", help="Show effective permissions for this user id."
+    ),
+) -> None:
+    """Map identity relationships and show who has access to what."""
+    console = _console()
+    database = get_database()
+    graph = PermissionGraph(database)
+    if user:
+        if not graph.has_user(user):
+            console.print(f"Unknown user '{user}'.", style="red")
+            raise typer.Exit(1)
+        render_user_map(console, graph, user)
+    else:
+        render_map_summary(console, graph)
 
 
 @app.command("help")

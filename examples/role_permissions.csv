@@ -1,0 +1,9 @@
+role_id,permission_id
+r-viewer,p-aws-read
+r-viewer,p-splunk-read
+r-developer,p-aws-read
+r-developer,p-github-push
+r-finance-reader,p-finance-read
+r-admin,p-aws-admin
+r-admin,p-db-admin
+r-security-analyst,p-splunk-read

@@ -20,7 +20,7 @@ from permission_map.core.models import (
 from permission_map.core.role_classifier import classify_role
 from permission_map.database.db import Database
 
-_ALLOWED_TABLES = {"users", "groups", "roles", "resources"}
+_ALLOWED_TABLES = {"users", "groups", "roles", "resources", "permissions"}
 
 
 def _id_map(db: Database, table: str) -> dict[str, int]:
@@ -149,6 +149,50 @@ def add_memberships(db: Database, memberships: Sequence[Membership]) -> int:
     return len(rows)
 
 
+def add_role_assignments(db: Database, assignments: Sequence) -> int:
+    if not assignments:
+        return 0
+    role_map = _id_map(db, "roles")
+    group_map = _id_map(db, "groups")
+    user_map = _id_map(db, "users")
+    rows = [
+        (
+            role_map[assignment.role_id],
+            group_map[assignment.group_id] if assignment.group_id else None,
+            user_map[assignment.user_id] if assignment.user_id else None,
+            int(assignment.direct),
+            assignment.source,
+        )
+        for assignment in assignments
+    ]
+    sql = """
+        INSERT OR IGNORE INTO role_assignments
+            (role_id, group_id, user_id, direct, source)
+        VALUES (?, ?, ?, ?, ?)
+    """
+    with db.connection() as connection:
+        connection.executemany(sql, rows)
+    return len(rows)
+
+
+def add_role_permissions(db: Database, links: Sequence) -> int:
+    if not links:
+        return 0
+    role_map = _id_map(db, "roles")
+    permission_map = _id_map(db, "permissions")
+    rows = [
+        (role_map[link.role_id], permission_map[link.permission_id])
+        for link in links
+    ]
+    sql = """
+        INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
+        VALUES (?, ?)
+    """
+    with db.connection() as connection:
+        connection.executemany(sql, rows)
+    return len(rows)
+
+
 def persist(db: Database, entity: str, models: Sequence) -> int:
     """Persist validated models of the given entity type and return the count."""
     persisters = {
@@ -158,6 +202,8 @@ def persist(db: Database, entity: str, models: Sequence) -> int:
         "resources": upsert_resources,
         "permissions": upsert_permissions,
         "memberships": add_memberships,
+        "role_assignments": add_role_assignments,
+        "role_permissions": add_role_permissions,
     }
     if entity not in persisters:
         raise ValueError(f"unsupported entity: {entity}")
@@ -198,6 +244,24 @@ _LIST_QUERIES: dict[str, str] = {
         "JOIN users u ON u.id = m.user_id "
         "JOIN groups g ON g.id = m.group_id "
         "ORDER BY u.external_id, g.external_id"
+    ),
+    "role_assignments": (
+        "SELECT r.external_id AS role_id, "
+        "COALESCE(g.external_id, '') AS group_id, "
+        "COALESCE(u.external_id, '') AS user_id, "
+        "ra.direct AS direct "
+        "FROM role_assignments ra "
+        "JOIN roles r ON r.id = ra.role_id "
+        "LEFT JOIN groups g ON g.id = ra.group_id "
+        "LEFT JOIN users u ON u.id = ra.user_id "
+        "ORDER BY r.external_id, group_id, user_id"
+    ),
+    "role_permissions": (
+        "SELECT r.external_id AS role_id, p.external_id AS permission_id "
+        "FROM role_permissions rp "
+        "JOIN roles r ON r.id = rp.role_id "
+        "JOIN permissions p ON p.id = rp.permission_id "
+        "ORDER BY r.external_id, p.external_id"
     ),
 }
 

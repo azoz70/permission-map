@@ -13,6 +13,8 @@ from permission_map.core.normalizer import REQUIRED, Issue
 REFERENCES: dict[str, dict[str, str]] = {
     "memberships": {"user_id": "users", "group_id": "groups"},
     "permissions": {"resource_id": "resources"},
+    "role_assignments": {"role_id": "roles", "group_id": "groups", "user_id": "users"},
+    "role_permissions": {"role_id": "roles", "permission_id": "permissions"},
 }
 
 
@@ -34,21 +36,25 @@ def validate_required(records: list[dict], entity: str) -> list[Issue]:
     return issues
 
 
-def validate_duplicates(records: list[dict], entity: str, key: str) -> list[Issue]:
-    """Flag duplicate identifier values within the same file."""
+def validate_duplicates(
+    records: list[dict], entity: str, key: str | tuple[str, ...]
+) -> list[Issue]:
+    """Flag duplicate identifier values (single or composite) within a file."""
+    keys: tuple[str, ...] = (key,) if isinstance(key, str) else tuple(key)
     issues: list[Issue] = []
-    seen: dict[str, int] = {}
+    seen: dict[tuple[str, ...], int] = {}
     for index, record in enumerate(records, start=2):
-        value = record.get(key)
-        if value is None:
+        value = tuple((record.get(k) or "") for k in keys)
+        if not any(value):
             continue
         if value in seen:
+            label = " + ".join(keys)
             issues.append(
                 Issue(
                     "error",
-                    f"duplicate {entity} '{key}' value '{value}' (already on row {seen[value]})",
+                    f"duplicate {entity} '{label}' value {value!r} "
+                    f"(already on row {seen[value]})",
                     row=index,
-                    field=key,
                 )
             )
         else:

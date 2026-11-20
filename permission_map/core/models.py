@@ -58,6 +58,20 @@ class Membership(BaseModel):
     source: str | None = None
 
 
+class RoleAssignment(BaseModel):
+    role_id: str
+    group_id: str | None = None
+    user_id: str | None = None
+    direct: bool = False
+    source: str | None = None
+
+
+class RolePermission(BaseModel):
+    role_id: str
+    permission_id: str
+    source: str | None = None
+
+
 # Canonical entities importable from CSV in the current phase.
 ENTITY_MODELS: dict[str, type[BaseModel]] = {
     "users": User,
@@ -66,4 +80,6 @@ ENTITY_MODELS: dict[str, type[BaseModel]] = {
     "resources": Resource,
     "permissions": Permission,
     "memberships": Membership,
+    "role_assignments": RoleAssignment,
+    "role_permissions": RolePermission,
 }

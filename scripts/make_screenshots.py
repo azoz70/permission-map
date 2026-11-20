@@ -21,7 +21,9 @@ except ImportError:  # pragma: no cover
 from permission_map.cli.dashboard import render_dashboard
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list
+from permission_map.cli.map_view import render_map_summary, render_user_map
 from permission_map.cli.shell import render_help
+from permission_map.core.graph_engine import PermissionGraph
 from permission_map.database.db import Database
 from permission_map.database.repositories import fetch_records
 from permission_map.importers.csv_importer import import_csv
@@ -30,7 +32,16 @@ from permission_map.utils.theme import get_theme
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "examples"
 OUTPUT = ROOT / "docs" / "screenshots"
-IMPORT_ORDER = ("resources", "users", "groups", "roles", "permissions", "memberships")
+IMPORT_ORDER = (
+    "resources",
+    "users",
+    "groups",
+    "roles",
+    "permissions",
+    "memberships",
+    "role_permissions",
+    "role_assignments",
+)
 
 
 def _database() -> Database:
@@ -87,6 +98,13 @@ def main() -> None:
             console, "memberships", fetch_records(database, "memberships")
         ),
     )
+
+    graph = PermissionGraph(database)
+    _save("07-map", lambda console: render_map_summary(console, graph))
+    _save("08-user-access", lambda console: render_user_map(console, graph, "u-1002"))
+
+    # The import screenshot adds sample users, so run it last to keep the
+    # other screenshots on the clean 8-user dataset.
     _save(
         "05-import",
         lambda console: render_import_result(
