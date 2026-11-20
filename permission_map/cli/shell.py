@@ -81,6 +81,8 @@ def render_help(console: Console) -> None:
 
     section("IMPORT DATA")
     table.add_row("import <file>", "Import and validate a CSV file")
+    table.add_row("  --type <entity>", "Force the entity type")
+    table.add_row("  --map <field>=<col>", "Map a source column to a field")
 
     section("VIEW DATA")
     table.add_row("list users", "Show all users")
@@ -93,7 +95,9 @@ def render_help(console: Console) -> None:
     section("OTHER")
     table.add_row("dashboard", "Show the full summary screen")
     table.add_row("version", "Print the version")
-    table.add_row("help", "Show this reference")
+    table.add_row("settings", "Show configuration and data location")
+    table.add_row("clear", "Clear the screen")
+    table.add_row("help / ?", "Show this reference")
     table.add_row("exit / 0", "Quit the menu")
 
     panel = Panel(

@@ -110,10 +110,11 @@ def render_overview(console: Console, db: Database) -> None:
 
 def _commands_panel(console: Console) -> None:
     steps = Group(
-        Text("permission-map            → interactive menu", style=WHITE),
-        Text("permission-map dashboard  → this summary (non-interactive)", style=WHITE),
-        Text("permission-map version    → print the version", style=WHITE),
-        Text("permission-map --help     → every command", style=WHITE),
+        Text("permission-map import <file> → import CSV data", style=WHITE),
+        Text("permission-map list <entity> → view records", style=WHITE),
+        Text("permission-map               → interactive menu", style=WHITE),
+        Text("permission-map dashboard     → this summary", style=WHITE),
+        Text("permission-map --help        → every command", style=WHITE),
     )
     panel = Panel(
         steps,
