@@ -18,7 +18,13 @@ from rich.panel import Panel
 from rich.style import Style
 from rich.text import Text
 
-from permission_map import __app_name__, __version__
+from permission_map import (
+    __app_name__,
+    __author__,
+    __author_linkedin__,
+    __linkedin_display__,
+    __version__,
+)
 from permission_map.cli.dashboard import render_app_banner
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list
@@ -26,7 +32,7 @@ from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import Database
 from permission_map.database.repositories import fetch_records
 from permission_map.importers.csv_importer import import_csv
-from permission_map.utils.theme import CYAN, MUTED_STYLE, WARN_STYLE, WHITE
+from permission_map.utils.theme import BLUE, CYAN, MUTED_STYLE, WARN_STYLE, WHITE
 
 _NUMBER_STYLE = Style(color=CYAN, bold=True)
 _PROMPT_STYLE = Style(color=CYAN, bold=True)
@@ -74,6 +80,13 @@ def render_help(console: Console) -> None:
         Text(
             "Entities: users · groups · roles · resources · permissions · memberships",
             style=MUTED_STYLE,
+        ),
+        Text(""),
+        Text.assemble(
+            ("Created by ", MUTED_STYLE),
+            (__author__, Style(color=WHITE, bold=True)),
+            ("  ·  ", MUTED_STYLE),
+            (__linkedin_display__, Style(color=BLUE, link=__author_linkedin__)),
         ),
     )
     panel = Panel(

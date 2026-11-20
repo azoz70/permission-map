@@ -16,10 +16,24 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from permission_map import __version__
+from permission_map import (
+    __author__,
+    __author_linkedin__,
+    __linkedin_display__,
+    __version__,
+)
 from permission_map.cli.logo import render_logo
 from permission_map.database.db import Database
-from permission_map.utils.theme import CYAN, GRAY, GREEN, MUTED_STYLE, PURPLE, WHITE
+from permission_map.utils.theme import (
+    BLUE,
+    CYAN,
+    GRAY,
+    GREEN,
+    MUTED_STYLE,
+    PURPLE,
+    WHITE,
+    YELLOW,
+)
 
 _BRACKET_STYLE = Style(dim=True)
 _LABEL_STYLE = Style(color=CYAN)
@@ -28,12 +42,18 @@ _ENGINE_STYLE = Style(color=PURPLE, bold=True)
 
 
 def render_status_lines(console: Console, db: Database) -> None:
-    """Print the live [SYSTEM]/[DATABASE]/[ENGINE]/[VERSION] status lines."""
+    """Print the live [SYSTEM]/[DATABASE]/[ENGINE]/[VERSION] status lines.
+
+    Rendered as a compact two-column table so the labels and values line up
+    neatly under each other instead of spreading across the terminal width.
+    """
     status = db.status()
     engine_state = "READY" if status["last_analysis_at"] else "STANDBY"
     database_state = "READY" if status["initialized"] else "NOT INITIALIZED"
-    database_style = Style(color=GREEN, bold=True) if status["initialized"] else Style(
-        color="yellow", bold=True
+    database_style = (
+        Style(color=GREEN, bold=True)
+        if status["initialized"]
+        else Style(color=YELLOW, bold=True)
     )
     entries: list[tuple[str, str, Style]] = [
         ("SYSTEM", "INITIALIZED", Style(color=CYAN, bold=True)),
@@ -41,15 +61,26 @@ def render_status_lines(console: Console, db: Database) -> None:
         ("ENGINE", engine_state, _ENGINE_STYLE),
         ("VERSION", __version__, MUTED_STYLE),
     ]
-    width = max(len(f"[ {label} ]") for label, _, _ in entries) + 5
+    table = Table(show_header=False, box=None, padding=(0, 2), expand=False)
+    table.add_column(justify="left", no_wrap=True)
+    table.add_column(justify="left", no_wrap=True)
     for label, value, style in entries:
-        left = Text.assemble(
+        label_cell = Text.assemble(
             ("[ ", _BRACKET_STYLE), (label, _LABEL_STYLE), (" ]", _BRACKET_STYLE)
         )
-        left.pad_right(width)
-        line = Text.assemble(left, (value, style))
-        line.justify = "center"
-        console.print(line)
+        table.add_row(label_cell, Text(value, style=style))
+    console.print(Align.center(table))
+
+
+def render_attribution(console: Console) -> None:
+    """Print the creator credit with a clickable LinkedIn link."""
+    line = Text.assemble(
+        ("Created by ", MUTED_STYLE),
+        (__author__, Style(color=WHITE, bold=True)),
+        ("  ·  ", MUTED_STYLE),
+        (__linkedin_display__, Style(color=BLUE, link=__author_linkedin__)),
+    )
+    console.print(line, justify="center")
 
 
 def render_overview(console: Console, db: Database) -> None:
@@ -105,6 +136,8 @@ def render_dashboard(console: Console, db: Database) -> None:
     console.print("")
     _commands_panel(console)
     console.print("")
+    render_attribution(console)
+    console.print("")
 
 
 def render_app_banner(console: Console, db: Database) -> None:
@@ -115,6 +148,8 @@ def render_app_banner(console: Console, db: Database) -> None:
     render_status_lines(console, db)
     console.print("")
     render_overview(console, db)
+    console.print("")
+    render_attribution(console)
     console.print("")
 
 

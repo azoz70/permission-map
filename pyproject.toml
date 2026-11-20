@@ -9,7 +9,7 @@ description = "PERMISSION MAP — local-first access intelligence & review engin
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
-authors = [{ name = "azoz70", email = "49665505+azoz70@users.noreply.github.com" }]
+authors = [{ name = "Abdulaziz Alshehri", email = "49665505+azoz70@users.noreply.github.com" }]
 keywords = [
     "iam",
     "rbac",
@@ -55,6 +55,7 @@ permission-map = "permission_map.cli.commands:app"
 Homepage = "https://github.com/azoz70/permission-map"
 Documentation = "https://github.com/azoz70/permission-map#readme"
 Issues = "https://github.com/azoz70/permission-map/issues"
+LinkedIn = "https://www.linkedin.com/in/abdulaziz-alshehri/"
 
 [tool.setuptools.packages.find]
 where = ["."]

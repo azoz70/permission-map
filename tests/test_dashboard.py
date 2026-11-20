@@ -60,3 +60,14 @@ def test_dashboard_renders_all_sections(tmp_path) -> None:
     assert "P E R M I S S I O N   M A P" in output
     assert "QUICK OVERVIEW" in output
     assert "COMMANDS" in output
+
+
+def test_dashboard_shows_author_attribution(tmp_path) -> None:
+    database = Database(tmp_path / "pm.db")
+    database.initialize()
+    console = _console()
+    render_dashboard(console, database)
+    output = console.file.getvalue()  # type: ignore[union-attr]
+    assert "Created by" in output
+    assert "Abdulaziz Alshehri" in output
+    assert "linkedin.com" in output

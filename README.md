@@ -89,6 +89,13 @@ permission-map/
 - Exported reports are protected against CSV formula injection.
 - No passwords or credentials are stored.
 
+## Author
+
+**Created by Abdulaziz Alshehri**
+
+- LinkedIn: https://www.linkedin.com/in/abdulaziz-alshehri/
+- GitHub: https://github.com/azoz70
+
 ## License
 
 [MIT](LICENSE)
