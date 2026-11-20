@@ -1,13 +1,15 @@
 """Fixed startup logo for PERMISSION MAP.
 
-A single, hand-tuned block-letter mark (``PERM``) inside a double-line frame,
-followed by the full name, tagline and the three pillars of the tool. The color
-stays within the brand palette so the screen never looks noisy.
+A single, hand-tuned block-letter mark (``PERM``) inside a wide double-line
+frame, followed by the full name, tagline, a short description of what the tool
+does, and the three pillars. The color stays within the brand palette so the
+screen never looks noisy.
 """
 
 from __future__ import annotations
 
 from rich import box
+from rich.align import Align
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.style import Style
@@ -25,9 +27,19 @@ BLOCK: tuple[str, ...] = (
     "██║     ███████╗██║  ██║██║ ╚═╝ ██║",
 )
 
+# Short, plain-language description of what the tool does.
+DESCRIPTION: tuple[str, ...] = (
+    "Map who has access to what — and why.",
+    "Detect excessive privileges and track changes.",
+)
+
+# Fixed frame width (columns) so the box looks wide and tidy on a full screen.
+FRAME_WIDTH = 68
+
 _NAME_STYLE = Style(color=WHITE, bold=True)
 _TAGLINE_STYLE = Style(color=CYAN)
 _BLOCK_STYLE = Style(color=CYAN)
+_DESC_STYLE = Style(color=WHITE)
 
 
 def _pillars() -> Text:
@@ -49,13 +61,17 @@ def render_logo(console: Console) -> None:
         Text("P E R M I S S I O N   M A P", style=_NAME_STYLE, justify="center"),
         Text("ACCESS INTELLIGENCE ENGINE", style=_TAGLINE_STYLE, justify="center"),
         Text("", justify="center"),
+        *[Text(line, style=_DESC_STYLE, justify="center") for line in DESCRIPTION],
+        Text("", justify="center"),
         _pillars(),
     )
+    width = min(FRAME_WIDTH, console.width - 2)
     panel = Panel(
         content,
         box=box.DOUBLE_EDGE,
         border_style=CYAN,
-        padding=(1, 2),
-        expand=False,
+        padding=(1, 3),
+        expand=True,
+        width=width,
     )
-    console.print(panel, justify="center")
+    console.print(Align.center(panel))
