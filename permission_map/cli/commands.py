@@ -12,7 +12,9 @@ import typer
 from rich.console import Console
 
 from permission_map import __app_name__, __description__, __version__
+from permission_map.analyzers.risk_engine import RiskEngine
 from permission_map.cli.dashboard import render_dashboard
+from permission_map.cli.findings_view import render_analysis_summary, render_findings
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list, with_user_roles
 from permission_map.cli.map_view import render_map_summary, render_user_map
@@ -20,7 +22,7 @@ from permission_map.cli.shell import render_help, run_shell
 from permission_map.core.graph_engine import PermissionGraph
 from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import get_database
-from permission_map.database.repositories import fetch_records
+from permission_map.database.repositories import fetch_records, list_findings
 from permission_map.importers.csv_importer import import_csv
 from permission_map.utils.theme import get_theme
 
@@ -39,6 +41,8 @@ app = typer.Typer(
         "  permission-map import data.csv --map user_id=Username\n"
         "  permission-map map\n"
         "  permission-map map --user u-1002\n"
+        "  permission-map analyze\n"
+        "  permission-map findings --severity high\n"
         "  permission-map dashboard\n"
         "  permission-map version\n"
         "  permission-map --help"
@@ -131,6 +135,30 @@ def map_access(
         render_user_map(console, graph, user)
     else:
         render_map_summary(console, graph)
+
+
+@app.command()
+def analyze() -> None:
+    """Run the risk engine, store findings and show a summary."""
+    console = _console()
+    database = get_database()
+    engine = RiskEngine(database)
+    findings = engine.run()
+    engine.persist(findings)
+    render_analysis_summary(console, findings)
+
+
+@app.command("findings")
+def findings_command(
+    severity: str | None = typer.Option(
+        None, "--severity", "-s", help="Filter: critical|high|medium|low."
+    ),
+    user: str | None = typer.Option(None, "--user", "-u", help="Filter by user id."),
+) -> None:
+    """List stored risk findings."""
+    console = _console()
+    database = get_database()
+    render_findings(console, list_findings(database, severity=severity, user=user))
 
 
 @app.command("help")

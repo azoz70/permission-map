@@ -50,15 +50,16 @@ class PermissionGraph:
         self.graph: nx.DiGraph = nx.DiGraph()
         self._permission_info: dict[str, dict[str, str]] = {}
         self._role_type: dict[str, str] = {}
+        self._user_status: dict[str, str] = {}
+        self._user_flag: dict[str, bool] = {}
         self._build()
 
     def _build(self) -> None:
         graph = self.graph
         with self.db.connection() as connection:
-            users = [
-                row["external_id"]
-                for row in connection.execute("SELECT external_id FROM users")
-            ]
+            users = connection.execute(
+                "SELECT external_id, status, is_privileged FROM users"
+            ).fetchall()
             groups = [
                 row["external_id"]
                 for row in connection.execute("SELECT external_id FROM groups")
@@ -93,8 +94,11 @@ class PermissionGraph:
                 "JOIN permissions p ON p.id = rp.permission_id"
             ).fetchall()
 
-        for user in users:
-            graph.add_node(("user", user), kind="user")
+        for row in users:
+            user_id = row["external_id"]
+            graph.add_node(("user", user_id), kind="user")
+            self._user_status[user_id] = row["status"] or "active"
+            self._user_flag[user_id] = bool(row["is_privileged"])
         for group in groups:
             graph.add_node(("group", group), kind="group")
         for row in roles:
@@ -134,6 +138,54 @@ class PermissionGraph:
     # -- queries ---------------------------------------------------------
     def has_user(self, user_id: str) -> bool:
         return ("user", user_id) in self.graph
+
+    def users(self) -> list[str]:
+        return sorted(node[1] for node in self.graph.nodes if node[0] == "user")
+
+    def groups(self) -> list[str]:
+        return sorted(node[1] for node in self.graph.nodes if node[0] == "group")
+
+    def user_status(self, user_id: str) -> str:
+        return self._user_status.get(user_id, "active")
+
+    def user_source_privileged(self, user_id: str) -> bool:
+        return self._user_flag.get(user_id, False)
+
+    def role_type(self, role_id: str) -> str:
+        return self._role_type.get(role_id, "")
+
+    def direct_roles(self, user_id: str) -> list[str]:
+        """Roles assigned directly to the user (not through a group)."""
+        node = ("user", user_id)
+        if node not in self.graph:
+            return []
+        return sorted(n[1] for n in self.graph.successors(node) if n[0] == "role")
+
+    def group_members(self, group_id: str) -> list[str]:
+        node = ("group", group_id)
+        if node not in self.graph:
+            return []
+        return sorted(n[1] for n in self.graph.predecessors(node) if n[0] == "user")
+
+    def group_roles(self, group_id: str) -> list[str]:
+        node = ("group", group_id)
+        if node not in self.graph:
+            return []
+        return sorted(n[1] for n in self.graph.successors(node) if n[0] == "role")
+
+    def has_role_permission_links(self) -> bool:
+        return any(data.get("relation") == "grants" for _, _, data in self.graph.edges(data=True))
+
+    def unused_permissions(self) -> list[str]:
+        """Permissions that no role grants."""
+        used = {
+            successor[1]
+            for node in self.graph.nodes
+            if node[0] == "role"
+            for successor in self.graph.successors(node)
+            if successor[0] == "permission"
+        }
+        return sorted(pid for pid in self._permission_info if pid not in used)
 
     def user_groups(self, user_id: str) -> list[str]:
         node = ("user", user_id)
@@ -182,9 +234,13 @@ class PermissionGraph:
             )
 
         access.grants.sort(key=lambda grant: (grant.resource_id, grant.permission_id))
-        access.privileged = any(
-            self._role_type.get(role) in PRIVILEGED_ROLE_TYPES for role in access.roles
-        ) or any(grant.action == "admin" for grant in access.grants)
+        access.privileged = (
+            self._user_flag.get(user_id, False)
+            or any(
+                self._role_type.get(role) in PRIVILEGED_ROLE_TYPES for role in access.roles
+            )
+            or any(grant.action == "admin" for grant in access.grants)
+        )
         return access
 
     def privileged_users(self) -> list[str]:

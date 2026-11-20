@@ -34,7 +34,7 @@ def _graph(tmp_path) -> PermissionGraph:
 
 def test_summary_counts_links(tmp_path) -> None:
     summary = _graph(tmp_path).summary()
-    assert summary["users"] == 8
+    assert summary["users"] == 9
     assert summary["roles"] == 5
     assert summary["permissions"] == 6
     assert summary["role_permissions"] == 8
@@ -83,4 +83,4 @@ def test_user_list_includes_roles_and_inferred_privilege(tmp_path) -> None:
     assert "r-admin" in by_id["u-1002"]["roles"]
     assert by_id["u-1002"]["is_privileged"] == 1
     assert by_id["u-1004"]["is_privileged"] == 0
-    assert by_id["u-1006"]["roles"] == ""
+    assert by_id["u-1009"]["roles"] == ""

@@ -54,6 +54,12 @@ cloud, no subscriptions, no telemetry.
 ### One user's effective permissions and grant paths
 ![User access](docs/screenshots/08-user-access.png)
 
+### Risk analysis
+![Risk analysis](docs/screenshots/09-analyze.png)
+
+### Explainable findings
+![Findings](docs/screenshots/10-findings.png)
+
 ### Command reference
 ![Help](docs/screenshots/06-help.png)
 
@@ -76,6 +82,8 @@ pip install -e ".[dev]"
 
 permission-map            # interactive menu (brand banner + actions)
 permission-map map        # who has access to what, and why
+permission-map analyze    # run the risk rules
+permission-map findings   # explainable findings
 permission-map --help     # all commands
 ```
 
@@ -108,7 +116,8 @@ permission-map/
 | 1 | Project skeleton, CLI startup, fixed block-letter logo, interactive menu, dashboard, SQLite schema | ✅ done |
 | 2 | CSV import + validation (column mapping, missing/invalid/duplicate/unknown-reference checks) | ✅ done |
 | 3 | Mapping / graph engine (user → group → role → permission, effective access, grant paths) | ✅ done |
-| 4 | Analysis & risk rules | ⏳ next |
+| 4 | Analysis & risk rules (explainable findings, severity, evidence) | ✅ done |
+| 5 | Snapshot comparison | ⏳ next |
 | 5 | Snapshot comparison | ⏳ |
 | 6 | Reporting (HTML/CSV/JSON) | ⏳ |
 | 7 | Access review, Excel/JSON import, tests & release | ⏳ |

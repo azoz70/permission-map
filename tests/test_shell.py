@@ -61,8 +61,8 @@ def test_unbuilt_item_reports_phase(tmp_path) -> None:
     database = Database(tmp_path / "pm.db")
     database.initialize()
     console = _console()
-    assert handle_command(console, database, "2") is True
-    assert "Phase 4" in console.file.getvalue()  # type: ignore[union-attr]
+    assert handle_command(console, database, "3") is True
+    assert "Phase 5" in console.file.getvalue()  # type: ignore[union-attr]
 
 
 def test_unknown_option_is_handled(tmp_path) -> None:

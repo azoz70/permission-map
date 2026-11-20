@@ -18,14 +18,16 @@ try:  # optional dev dependency used to render SVG -> PNG
 except ImportError:  # pragma: no cover
     resvg_py = None
 
+from permission_map.analyzers.risk_engine import RiskEngine
 from permission_map.cli.dashboard import render_dashboard
+from permission_map.cli.findings_view import render_analysis_summary, render_findings
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list
 from permission_map.cli.map_view import render_map_summary, render_user_map
 from permission_map.cli.shell import render_help
 from permission_map.core.graph_engine import PermissionGraph
 from permission_map.database.db import Database
-from permission_map.database.repositories import fetch_records
+from permission_map.database.repositories import fetch_records, list_findings
 from permission_map.importers.csv_importer import import_csv
 from permission_map.utils.theme import get_theme
 
@@ -83,6 +85,11 @@ def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     database = _database()
 
+    graph = PermissionGraph(database)
+    engine = RiskEngine(database, graph)
+    findings = engine.run()
+    engine.persist(findings)
+
     _save("01-startup", lambda console: render_dashboard(console, database))
     _save(
         "02-list-users",
@@ -99,9 +106,13 @@ def main() -> None:
         ),
     )
 
-    graph = PermissionGraph(database)
     _save("07-map", lambda console: render_map_summary(console, graph))
     _save("08-user-access", lambda console: render_user_map(console, graph, "u-1002"))
+    _save("09-analyze", lambda console: render_analysis_summary(console, findings))
+    _save(
+        "10-findings",
+        lambda console: render_findings(console, list_findings(database)),
+    )
 
     # The import screenshot adds sample users, so run it last to keep the
     # other screenshots on the clean 8-user dataset.

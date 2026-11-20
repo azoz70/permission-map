@@ -26,14 +26,16 @@ from permission_map import (
     __linkedin_display__,
     __version__,
 )
+from permission_map.analyzers.risk_engine import RiskEngine
 from permission_map.cli.dashboard import render_app_banner, render_dashboard
+from permission_map.cli.findings_view import render_analysis_summary, render_findings
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list, with_user_roles
 from permission_map.cli.map_view import render_map_summary, render_user_map
 from permission_map.core.graph_engine import PermissionGraph
 from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import Database
-from permission_map.database.repositories import fetch_records
+from permission_map.database.repositories import fetch_records, list_findings
 from permission_map.importers.csv_importer import import_csv
 from permission_map.utils.theme import BLUE, CYAN, MUTED_STYLE, PURPLE, WARN_STYLE, WHITE
 
@@ -53,10 +55,8 @@ MENU_ITEMS: tuple[tuple[str, str], ...] = (
 
 # Which phase delivers each numbered menu item (kept honest while unbuilt).
 _PHASE: dict[str, str] = {
-    "2": "Phase 4 (analysis engine)",
     "3": "Phase 5 (snapshot comparison)",
     "4": "Phase 7 (review workflow)",
-    "5": "Phase 6 (findings & reports)",
     "6": "Phase 6 (HTML/CSV/JSON reports)",
 }
 
@@ -89,6 +89,10 @@ def render_help(console: Console) -> None:
     section("MAP ACCESS")
     table.add_row("map", "Map users, groups, roles and permissions")
     table.add_row("map <user>", "Show a user's effective permissions and why")
+
+    section("ANALYZE")
+    table.add_row("analyze", "Run the risk rules and store findings")
+    table.add_row("findings", "List stored findings by severity")
 
     section("VIEW DATA")
     table.add_row("list users", "Show all users")
@@ -231,6 +235,17 @@ def handle_command(
             console.print(Text(f"Unknown user '{target}'.", style=WARN_STYLE), justify="center")
         else:
             render_user_map(console, graph, target)
+        return True
+
+    if command in {"2", "analyze"}:
+        engine = RiskEngine(db)
+        findings = engine.run()
+        engine.persist(findings)
+        render_analysis_summary(console, findings)
+        return True
+
+    if command in {"5", "findings"}:
+        render_findings(console, list_findings(db))
         return True
     if command in _PHASE:
         label = dict(MENU_ITEMS)[command]

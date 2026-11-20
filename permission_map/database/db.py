@@ -297,6 +297,14 @@ class Database:
             ).fetchone()
         return int(row["n"])
 
+    def finding_count(self) -> int:
+        """Return the total number of stored findings."""
+        if not self.exists():
+            return 0
+        with self.connection() as connection:
+            row = connection.execute("SELECT COUNT(*) AS n FROM findings").fetchone()
+        return int(row["n"])
+
     def status(self) -> dict:
         """Return a snapshot of database state for the dashboard.
 

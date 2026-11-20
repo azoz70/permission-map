@@ -23,6 +23,7 @@ from permission_map import (
     __version__,
 )
 from permission_map.cli.logo import render_logo
+from permission_map.core.graph_engine import PermissionGraph
 from permission_map.database.db import Database
 from permission_map.utils.theme import (
     BLUE,
@@ -86,8 +87,8 @@ def render_attribution(console: Console) -> None:
 def render_overview(console: Console, db: Database) -> None:
     """Print the QUICK OVERVIEW panel with real counts from the database."""
     counts = db.counts()
-    privileged = db.privileged_user_count()
-    findings = db.open_finding_count()
+    privileged = len(PermissionGraph(db).privileged_users())
+    findings = db.finding_count()
 
     table = Table(show_header=False, box=None, padding=(0, 1), expand=False)
     table.add_column(justify="right", style=MUTED_STYLE)

@@ -283,3 +283,55 @@ def fetch_records(db: Database, entity: str) -> list[dict]:
                     bool(record.get("is_admin")),
                 )
     return records
+
+
+_FINDING_ORDER = (
+    "ORDER BY CASE f.severity "
+    "WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, "
+    "f.finding_id"
+)
+
+
+def list_findings(
+    db: Database, severity: str | None = None, user: str | None = None
+) -> list[dict]:
+    """Return stored findings, optionally filtered by severity or user."""
+    query = (
+        "SELECT f.finding_id, f.severity, f.status, "
+        "u.external_id AS user_id, r.external_id AS resource_id, "
+        "p.external_id AS permission_id, f.rule, f.reason, f.evidence, f.recommendation "
+        "FROM findings f "
+        "LEFT JOIN users u ON u.id = f.user_id "
+        "LEFT JOIN resources r ON r.id = f.resource_id "
+        "LEFT JOIN permissions p ON p.id = f.permission_id"
+    )
+    conditions: list[str] = []
+    params: list[str] = []
+    if severity:
+        conditions.append("f.severity = ?")
+        params.append(severity.lower())
+    if user:
+        conditions.append("u.external_id = ?")
+        params.append(user)
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " " + _FINDING_ORDER
+    with db.connection() as connection:
+        rows = connection.execute(query, params).fetchall()
+    return [dict(row) for row in rows]
+
+
+def finding_counts(db: Database) -> dict[str, int]:
+    """Return the number of findings per severity."""
+    counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+    if not db.exists():
+        return counts
+    with db.connection() as connection:
+        rows = connection.execute(
+            "SELECT severity, COUNT(*) AS n FROM findings GROUP BY severity"
+        ).fetchall()
+    for row in rows:
+        severity = (row["severity"] or "").lower()
+        if severity in counts:
+            counts[severity] = int(row["n"])
+    return counts

@@ -22,6 +22,9 @@ permission-map list users      # view imported records as a table
 permission-map list memberships # view user ↔ group relationships
 permission-map map             # access-graph summary, role map, privileged users
 permission-map map --user u-1002  # one user's effective permissions and why
+permission-map analyze         # run the risk rules and store findings
+permission-map findings        # list stored findings
+permission-map findings --severity critical
 permission-map dashboard       # non-interactive dashboard with live database status
 permission-map version         # print the installed version
 permission-map help            # command reference
@@ -96,6 +99,25 @@ permission-map map --user u-1002   # effective permissions and the path that gra
 The user view shows whether each grant is **direct** (role assigned to the user)
 or **inherited** (via a group), plus the exact chain, e.g.
 `g-itops → r-admin → p-aws-admin`.
+
+## Risk analysis
+
+`permission-map analyze` runs the rule engine and stores explainable findings:
+
+```bash
+permission-map analyze
+permission-map findings
+permission-map findings --severity critical
+permission-map findings --user u-1002
+```
+
+Every finding carries a stable ID, severity (`critical`/`high`/`medium`/`low`),
+confidence (`confirmed`/`potential`), the evidence path and a recommended
+action. Rules include dormant privileged accounts, undeclared admin access,
+direct admin assignments, admin roles on broad groups, conflicting role types,
+excessive grants, orphaned users/groups and unused permissions.
+
+Findings are derived data: re-running `analyze` replaces the stored set.
 
 ## Configuration
 

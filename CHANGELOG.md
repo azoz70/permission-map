@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-20
+
+### Added
+
+- Rule-based risk engine with explainable findings: `dormant_privileged`,
+  `privileged_undeclared`, `direct_admin`, `admin_via_broad_group`,
+  `conflicting_role_types`, `excessive_grants`, `orphaned_user`,
+  `orphaned_group`, `unused_permission`, `dormant_account`.
+- `permission-map analyze` runs the rules, stores findings and shows a summary.
+- `permission-map findings` lists findings, filterable by `--severity` and
+  `--user`.
+- Each finding has a stable ID, severity, confidence (confirmed/potential),
+  evidence (grant path) and a recommended action.
+- Dashboard now reports inferred privileged users and stored findings.
+- 62 tests and two new screenshots.
+
 ## [0.2.1] - 2026-11-20
 
 ### Changed
