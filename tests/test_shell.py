@@ -71,3 +71,37 @@ def test_unknown_option_is_handled(tmp_path) -> None:
     console = _console()
     assert handle_command(console, database, "nope") is True
     assert "Unknown option" in console.file.getvalue()  # type: ignore[union-attr]
+
+
+def test_import_command_with_path(tmp_path) -> None:
+    database = Database(tmp_path / "pm.db")
+    database.initialize()
+    file = tmp_path / "users.csv"
+    with file.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["user_id", "name"])
+        writer.writerow(["u1", "Alice"])
+
+    console = _console()
+    assert handle_command(console, database, f"import {file}") is True
+    assert "IMPORT RESULT" in console.file.getvalue()  # type: ignore[union-attr]
+    assert database.counts()["users"] == 1
+
+
+def test_dashboard_command_in_menu(tmp_path) -> None:
+    database = Database(tmp_path / "pm.db")
+    database.initialize()
+    console = _console()
+    assert handle_command(console, database, "dashboard") is True
+    assert "QUICK OVERVIEW" in console.file.getvalue()  # type: ignore[union-attr]
+
+
+def test_help_is_clear(tmp_path) -> None:
+    database = Database(tmp_path / "pm.db")
+    database.initialize()
+    console = _console()
+    assert handle_command(console, database, "help") is True
+    output = console.file.getvalue()  # type: ignore[union-attr]
+    assert "IMPORT DATA" in output
+    assert "VIEW DATA" in output
+    assert "list memberships" in output

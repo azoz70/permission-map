@@ -29,6 +29,27 @@ Inside the interactive menu, type a number to select an action, or `help` to
 see the options, `settings` for configuration, and `exit`/`0` to quit. Option
 `[1] Import Data` asks for a file path and imports it.
 
+## Shortcuts (no repeated prefix)
+
+Run `permission-map` once and stay inside the interactive menu — commands are
+typed there **without** the `permission-map` prefix:
+
+```text
+permission-map
+permission-map > import examples/users.csv
+permission-map > list users
+permission-map > list roles
+permission-map > 0
+```
+
+To shorten it from your normal shell, add an alias:
+
+```bash
+alias pm="permission-map"     # add to ~/.zshrc to keep it
+pm list users
+pm import examples/users.csv
+```
+
 ## Importing data
 
 `permission-map import` detects the entity type from the file name (e.g.

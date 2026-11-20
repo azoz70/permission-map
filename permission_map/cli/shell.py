@@ -13,9 +13,10 @@ from pathlib import Path
 
 from rich import box
 from rich.align import Align
-from rich.console import Console, Group
+from rich.console import Console
 from rich.panel import Panel
 from rich.style import Style
+from rich.table import Table
 from rich.text import Text
 
 from permission_map import (
@@ -25,14 +26,14 @@ from permission_map import (
     __linkedin_display__,
     __version__,
 )
-from permission_map.cli.dashboard import render_app_banner
+from permission_map.cli.dashboard import render_app_banner, render_dashboard
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list
 from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import Database
 from permission_map.database.repositories import fetch_records
 from permission_map.importers.csv_importer import import_csv
-from permission_map.utils.theme import BLUE, CYAN, MUTED_STYLE, WARN_STYLE, WHITE
+from permission_map.utils.theme import BLUE, CYAN, MUTED_STYLE, PURPLE, WARN_STYLE, WHITE
 
 _NUMBER_STYLE = Style(color=CYAN, bold=True)
 _PROMPT_STYLE = Style(color=CYAN, bold=True)
@@ -68,35 +69,54 @@ def render_menu(console: Console) -> None:
 
 
 def render_help(console: Console) -> None:
-    """Print the command reference (available from the menu and the CLI)."""
-    lines = Group(
-        Text("import <file>   import a CSV file of access data", style=WHITE),
-        Text("list <entity>   view records (e.g. list users)", style=WHITE),
-        Text("dashboard       non-interactive summary", style=WHITE),
-        Text("version         print the version", style=WHITE),
-        Text("help            show this reference", style=WHITE),
-        Text("exit / 0        quit", style=WHITE),
-        Text(""),
-        Text(
-            "Entities: users · groups · roles · resources · permissions · memberships",
+    """Print a clear, grouped command reference."""
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column(style=Style(color=CYAN, bold=True), no_wrap=True)
+    table.add_column(style=WHITE)
+
+    def section(title: str) -> None:
+        if table.row_count:
+            table.add_row("", "")
+        table.add_row(Text(title, style=Style(color=PURPLE, bold=True)), "")
+
+    section("IMPORT DATA")
+    table.add_row("import <file>", "Import and validate a CSV file")
+
+    section("VIEW DATA")
+    table.add_row("list users", "Show all users")
+    table.add_row("list groups", "Show all groups")
+    table.add_row("list roles", "Show roles with their detected type")
+    table.add_row("list resources", "Show all resources")
+    table.add_row("list permissions", "Show all permissions")
+    table.add_row("list memberships", "Show which users belong to which groups")
+
+    section("OTHER")
+    table.add_row("dashboard", "Show the full summary screen")
+    table.add_row("version", "Print the version")
+    table.add_row("help", "Show this reference")
+    table.add_row("exit / 0", "Quit the menu")
+
+    panel = Panel(
+        table,
+        title=Text("COMMANDS", style=Style(color=CYAN, bold=True)),
+        subtitle=Text(
+            "Tip: type commands here without the 'permission-map' prefix",
             style=MUTED_STYLE,
         ),
-        Text(""),
+        border_style=CYAN,
+        box=box.ROUNDED,
+        expand=False,
+    )
+    console.print(Align.center(panel))
+    console.print(
         Text.assemble(
             ("Created by ", MUTED_STYLE),
             (__author__, Style(color=WHITE, bold=True)),
             ("  ·  ", MUTED_STYLE),
             (__linkedin_display__, Style(color=BLUE, link=__author_linkedin__)),
         ),
+        justify="center",
     )
-    panel = Panel(
-        lines,
-        title=Text("COMMANDS", style=Style(color=CYAN, bold=True)),
-        border_style=CYAN,
-        box=box.ROUNDED,
-        expand=False,
-    )
-    console.print(Align.center(panel))
 
 
 def _ellipsize(value: str, max_length: int = 46) -> str:
@@ -121,6 +141,16 @@ def _show_settings(console: Console, db: Database) -> None:
         console.print(line)
 
 
+def _run_import(console: Console, db: Database, path_text: str) -> None:
+    """Import a CSV and render the result (used by option 1 and 'import')."""
+    path = path_text.strip()
+    if not path:
+        console.print(Text("No file given.", style=WARN_STYLE), justify="center")
+        return
+    result = import_csv(db, Path(path))
+    render_import_result(console, result)
+
+
 def handle_command(
     console: Console,
     db: Database,
@@ -128,33 +158,44 @@ def handle_command(
     input_fn: Callable[[Text], str] | None = None,
 ) -> bool:
     """Handle one menu choice. Return False to exit, True to continue."""
-    command = choice.strip().lower()
+    raw_command = choice.strip()
+    command = raw_command.lower()
+
     if command in {"0", "exit", "quit", "q"}:
         return False
-    if command == "1":
+
+    if command in {"1", "import"}:
         read = input_fn or (lambda p: console.input(p))
-        raw = read(Text.assemble(("File path: ", WHITE)))
-        path = raw.strip()
-        if not path:
-            console.print(Text("No file given.", style=WARN_STYLE), justify="center")
-            return True
-        result = import_csv(db, Path(path))
-        render_import_result(console, result)
+        path_text = read(Text.assemble(("File path: ", WHITE)))
+        _run_import(console, db, path_text)
         return True
+
+    if command.startswith("import "):
+        _run_import(console, db, raw_command[7:])
+        return True
+
     if command in {"7", "settings"}:
         _show_settings(console, db)
         return True
+
     if command == "version":
         console.print(f"{__app_name__} v{__version__}", justify="center")
         return True
+
+    if command == "dashboard":
+        render_dashboard(console, db)
+        return True
+
     if command in {"help", "?"}:
         render_help(console)
         return True
+
     if command in {"clear", "cls"}:
         console.clear()
         return True
+
     if command.startswith("list"):
-        entity_name = command.split(" ", 1)[1].strip() if " " in command else ""
+        entity_name = raw_command.split(" ", 1)[1].strip() if " " in raw_command else ""
         canonical = normalize_entity(entity_name) if entity_name else None
         if canonical is None:
             console.print(
