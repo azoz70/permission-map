@@ -1,0 +1,6 @@
+resource_id,name,resource_type
+res-aws,AWS Console,cloud
+res-github,GitHub,code
+res-erp,ERP Finance,application
+res-splunk,Splunk,observability
+res-db,PostgreSQL Database,database

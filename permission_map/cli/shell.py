@@ -17,7 +17,9 @@ from rich.text import Text
 
 from permission_map import __app_name__, __version__
 from permission_map.cli.dashboard import render_app_banner
+from permission_map.cli.import_view import render_import_result
 from permission_map.database.db import Database
+from permission_map.importers.csv_importer import import_csv
 from permission_map.utils.theme import CYAN, MUTED_STYLE, WARN_STYLE, WHITE
 
 _NUMBER_STYLE = Style(color=CYAN, bold=True)
@@ -36,7 +38,6 @@ MENU_ITEMS: tuple[tuple[str, str], ...] = (
 
 # Which phase delivers each numbered menu item (kept honest while unbuilt).
 _PHASE: dict[str, str] = {
-    "1": "Phase 2 (CSV/JSON/Excel import)",
     "2": "Phase 4 (analysis engine)",
     "3": "Phase 5 (snapshot comparison)",
     "4": "Phase 7 (review workflow)",
@@ -76,11 +77,26 @@ def _show_settings(console: Console, db: Database) -> None:
         console.print(line)
 
 
-def handle_command(console: Console, db: Database, choice: str) -> bool:
+def handle_command(
+    console: Console,
+    db: Database,
+    choice: str,
+    input_fn: Callable[[Text], str] | None = None,
+) -> bool:
     """Handle one menu choice. Return False to exit, True to continue."""
     command = choice.strip().lower()
     if command in {"0", "exit", "quit", "q"}:
         return False
+    if command == "1":
+        read = input_fn or (lambda p: console.input(p))
+        raw = read(Text.assemble(("File path: ", WHITE)))
+        path = raw.strip()
+        if not path:
+            console.print(Text("No file given.", style=WARN_STYLE), justify="center")
+            return True
+        result = import_csv(db, Path(path))
+        render_import_result(console, result)
+        return True
     if command in {"7", "settings"}:
         _show_settings(console, db)
         return True
@@ -130,7 +146,7 @@ def run_shell(
         except (EOFError, KeyboardInterrupt):
             console.print()
             break
-        if not handle_command(console, db, choice):
+        if not handle_command(console, db, choice, input_fn=read):
             break
 
     console.print(Text("Goodbye.", style=MUTED_STYLE), justify="center")

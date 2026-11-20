@@ -73,7 +73,7 @@ permission-map/
 | Phase | Scope | Status |
 | ----- | ----- | ------ |
 | 1 | Project skeleton, CLI startup, fixed block-letter logo, interactive menu, dashboard, SQLite schema | ✅ done |
-| 2 | CSV import + validation | ⏳ next |
+| 2 | CSV import + validation (column mapping, missing/invalid/duplicate/unknown-reference checks) | ✅ done |
 | 3 | Mapping / graph engine | ⏳ |
 | 4 | Analysis & risk rules | ⏳ |
 | 5 | Snapshot comparison | ⏳ |
