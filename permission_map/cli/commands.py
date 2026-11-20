@@ -15,7 +15,7 @@ from permission_map import __app_name__, __description__, __version__
 from permission_map.cli.dashboard import render_dashboard
 from permission_map.cli.import_view import render_import_result
 from permission_map.cli.list_view import render_list
-from permission_map.cli.shell import run_shell
+from permission_map.cli.shell import render_help, run_shell
 from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import get_database
 from permission_map.database.repositories import fetch_records
@@ -105,6 +105,12 @@ def list_data(
         )
         raise typer.Exit(1)
     render_list(console, canonical, fetch_records(database, canonical))
+
+
+@app.command("help")
+def help_command() -> None:
+    """Show the command reference."""
+    render_help(_console())
 
 
 @app.command()

@@ -18,8 +18,11 @@ The `permission-map` entry point is now available.
 permission-map                 # open the interactive menu (brand banner + actions)
 permission-map --help          # list all commands and examples
 permission-map import examples/users.csv     # import + validate a CSV
+permission-map list users      # view imported records as a table
+permission-map list memberships # view user ↔ group relationships
 permission-map dashboard       # non-interactive dashboard with live database status
 permission-map version         # print the installed version
+permission-map help            # command reference
 ```
 
 Inside the interactive menu, type a number to select an action, or `help` to

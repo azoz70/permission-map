@@ -11,7 +11,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from rich.console import Console
+from rich import box
+from rich.align import Align
+from rich.console import Console, Group
+from rich.panel import Panel
 from rich.style import Style
 from rich.text import Text
 
@@ -56,6 +59,31 @@ def render_menu(console: Console) -> None:
         line.append(label, style=WHITE)
         line.justify = "center"
         console.print(line)
+
+
+def render_help(console: Console) -> None:
+    """Print the command reference (available from the menu and the CLI)."""
+    lines = Group(
+        Text("import <file>   import a CSV file of access data", style=WHITE),
+        Text("list <entity>   view records (e.g. list users)", style=WHITE),
+        Text("dashboard       non-interactive summary", style=WHITE),
+        Text("version         print the version", style=WHITE),
+        Text("help            show this reference", style=WHITE),
+        Text("exit / 0        quit", style=WHITE),
+        Text(""),
+        Text(
+            "Entities: users · groups · roles · resources · permissions · memberships",
+            style=MUTED_STYLE,
+        ),
+    )
+    panel = Panel(
+        lines,
+        title=Text("COMMANDS", style=Style(color=CYAN, bold=True)),
+        border_style=CYAN,
+        box=box.ROUNDED,
+        expand=False,
+    )
+    console.print(Align.center(panel))
 
 
 def _ellipsize(value: str, max_length: int = 46) -> str:
@@ -107,7 +135,7 @@ def handle_command(
         console.print(f"{__app_name__} v{__version__}", justify="center")
         return True
     if command in {"help", "?"}:
-        render_menu(console)
+        render_help(console)
         return True
     if command in {"clear", "cls"}:
         console.clear()
@@ -155,6 +183,10 @@ def run_shell(
 
     render_app_banner(console, db)
     render_menu(console)
+    console.print(
+        Text("Type 'help' for commands, 'list users' for data, '0' to exit.", style=MUTED_STYLE),
+        justify="center",
+    )
     console.print("")
 
     while True:

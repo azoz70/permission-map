@@ -9,7 +9,7 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from permission_map.utils.theme import CYAN, MUTED_STYLE, WHITE
+from permission_map.utils.theme import CYAN, GREEN, MUTED_STYLE, RED, WHITE, YELLOW
 
 # Entity -> (key, header) columns shown in the terminal table. Kept compact so
 # the table fits a normal terminal without truncating column values.
@@ -44,6 +44,20 @@ _COLUMNS: dict[str, tuple[tuple[str, str], ...]] = {
 
 _BOOLEAN_KEYS = {"is_privileged", "is_admin"}
 
+# Suggested import command shown when an entity has no records yet.
+_IMPORT_HINT: dict[str, str] = {
+    "users": "examples/users.csv",
+    "groups": "examples/groups.csv",
+    "roles": "examples/roles.csv",
+    "resources": "examples/resources.csv",
+    "permissions": "examples/permissions.csv",
+    "memberships": "examples/memberships.csv",
+}
+
+_PRIVILEGED_STYLE = Style(color=RED, bold=True)
+_ACTIVE_STYLE = Style(color=GREEN, bold=True)
+_INACTIVE_STYLE = Style(color=YELLOW, bold=True)
+
 
 def _ellipsize(value: str, max_length: int = 28) -> str:
     if len(value) <= max_length:
@@ -52,14 +66,36 @@ def _ellipsize(value: str, max_length: int = 28) -> str:
     return f"{value[:keep]}…{value[-keep:]}"
 
 
+def _format_cell(key: str, value: object) -> str | Text:
+    if key in _BOOLEAN_KEYS:
+        return Text("yes", style=_PRIVILEGED_STYLE) if value else Text("no", style=MUTED_STYLE)
+    if key == "status":
+        status = str(value or "")
+        if status == "active":
+            return Text(status, style=_ACTIVE_STYLE)
+        if status in {"suspended", "disabled", "left"}:
+            return Text(status, style=_INACTIVE_STYLE)
+        return status or "—"
+    if value is None or value == "":
+        return "—"
+    return _ellipsize(str(value))
+
+
 def render_list(console: Console, entity: str, records: list[dict]) -> None:
-    """Render the records of one entity as a table, or a clear empty state."""
+    """Render the records of one entity as a table, or a helpful empty state."""
     columns = _COLUMNS[entity]
     console.print("")
 
     if not records:
-        message = Text(f"No {entity} found — import a file first.", style=MUTED_STYLE)
-        console.print(message, justify="center")
+        hint = _IMPORT_HINT.get(entity, "<file>")
+        console.print(
+            Text(f"No {entity} found yet.", style=Style(color=YELLOW, bold=True)),
+            justify="center",
+        )
+        console.print(
+            Text(f"Import one first:  permission-map import {hint}", style=MUTED_STYLE),
+            justify="center",
+        )
         console.print("")
         return
 
@@ -72,17 +108,7 @@ def render_list(console: Console, entity: str, records: list[dict]) -> None:
     for _, header in columns:
         table.add_column(header, no_wrap=True, style=WHITE)
     for record in records:
-        row: list[str] = []
-        for key, _ in columns:
-            value = record.get(key)
-            if key in _BOOLEAN_KEYS:
-                value = "yes" if value else "no"
-            elif value is None or value == "":
-                value = "—"
-            else:
-                value = _ellipsize(str(value))
-            row.append(value)
-        table.add_row(*row)
+        table.add_row(*(_format_cell(key, record.get(key)) for key, _ in columns))
 
     console.print(Align.center(table))
     console.print("")
