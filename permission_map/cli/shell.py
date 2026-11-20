@@ -1,0 +1,136 @@
+"""Interactive menu shell for PERMISSION MAP.
+
+The default ``permission-map`` startup drops into a small interactive menu that
+shows the brand banner and dispatches numbered actions. Items that belong to a
+later development phase are answered honestly ("available in Phase N") rather
+than pretending to run.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from pathlib import Path
+
+from rich.console import Console
+from rich.style import Style
+from rich.text import Text
+
+from permission_map import __app_name__, __version__
+from permission_map.cli.dashboard import render_app_banner
+from permission_map.database.db import Database
+from permission_map.utils.theme import CYAN, MUTED_STYLE, WARN_STYLE, WHITE
+
+_NUMBER_STYLE = Style(color=CYAN, bold=True)
+_PROMPT_STYLE = Style(color=CYAN, bold=True)
+
+MENU_ITEMS: tuple[tuple[str, str], ...] = (
+    ("1", "Import Data"),
+    ("2", "Analyze Permissions"),
+    ("3", "Permission Changes"),
+    ("4", "Access Reviews"),
+    ("5", "View Findings"),
+    ("6", "Generate Reports"),
+    ("7", "Settings"),
+    ("0", "Exit"),
+)
+
+# Which phase delivers each numbered menu item (kept honest while unbuilt).
+_PHASE: dict[str, str] = {
+    "1": "Phase 2 (CSV/JSON/Excel import)",
+    "2": "Phase 4 (analysis engine)",
+    "3": "Phase 5 (snapshot comparison)",
+    "4": "Phase 7 (review workflow)",
+    "5": "Phase 6 (findings & reports)",
+    "6": "Phase 6 (HTML/CSV/JSON reports)",
+}
+
+
+def render_menu(console: Console) -> None:
+    """Print the numbered action menu."""
+    for key, label in MENU_ITEMS:
+        line = Text.assemble((" [", MUTED_STYLE), (key, _NUMBER_STYLE), ("] ", MUTED_STYLE))
+        line.append(label, style=WHITE)
+        line.justify = "center"
+        console.print(line)
+
+
+def _ellipsize(value: str, max_length: int = 46) -> str:
+    if len(value) <= max_length:
+        return value
+    keep = (max_length - 1) // 2
+    return f"{value[:keep]}…{value[-keep:]}"
+
+
+def _show_settings(console: Console, db: Database) -> None:
+    status = db.status()
+    path = Path(status["path"])
+    console.print(Text("Settings", style=Style(color=CYAN, bold=True)), justify="center")
+    for label, value in (
+        ("Data directory", _ellipsize(str(path.parent))),
+        ("Database", path.name),
+        ("Schema version", f"v{status['schema_version']}"),
+        ("Version", __version__),
+    ):
+        line = Text.assemble((f"{label:<15}", MUTED_STYLE), (value, WHITE))
+        line.justify = "center"
+        console.print(line)
+
+
+def handle_command(console: Console, db: Database, choice: str) -> bool:
+    """Handle one menu choice. Return False to exit, True to continue."""
+    command = choice.strip().lower()
+    if command in {"0", "exit", "quit", "q"}:
+        return False
+    if command in {"7", "settings"}:
+        _show_settings(console, db)
+        return True
+    if command == "version":
+        console.print(f"{__app_name__} v{__version__}", justify="center")
+        return True
+    if command in {"help", "?"}:
+        render_menu(console)
+        return True
+    if command in {"clear", "cls"}:
+        console.clear()
+        return True
+    if command in _PHASE:
+        label = dict(MENU_ITEMS)[command]
+        line = Text.assemble(
+            (f"{label} — available in {_PHASE[command]}.", WARN_STYLE)
+        )
+        line.justify = "center"
+        console.print(line)
+        return True
+    line = Text.assemble(
+        ("Unknown option: ", WARN_STYLE),
+        (choice, WHITE),
+        ("  (type 'help' for options)", MUTED_STYLE),
+    )
+    line.justify = "center"
+    console.print(line)
+    return True
+
+
+def run_shell(
+    console: Console,
+    db: Database,
+    input_fn: Callable[[Text], str] | None = None,
+) -> None:
+    """Run the interactive menu loop until the user exits."""
+    prompt = Text.assemble(("permission-map", _PROMPT_STYLE), (" > ", WHITE))
+    read = input_fn or (lambda p: console.input(p))
+
+    render_app_banner(console, db)
+    render_menu(console)
+    console.print("")
+
+    while True:
+        try:
+            choice = read(prompt)
+        except (EOFError, KeyboardInterrupt):
+            console.print()
+            break
+        if not handle_command(console, db, choice):
+            break
+
+    console.print(Text("Goodbye.", style=MUTED_STYLE), justify="center")

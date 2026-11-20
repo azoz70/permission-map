@@ -1,9 +1,9 @@
 """Dashboard rendering for PERMISSION MAP.
 
-Builds the startup experience: a randomized logo, brand header, live database
-status and an access-intelligence summary. Every number shown is read from the
-real SQLite database — an empty database is reported as zeros plus a clear
-hint, never as fabricated sample data.
+Builds the startup screen: the fixed brand logo, live status lines and an
+access-intelligence quick overview. Every number shown is read from the real
+SQLite database — an empty database is reported as zeros, never as fabricated
+sample data.
 """
 
 from __future__ import annotations
@@ -12,177 +12,115 @@ from rich import box
 from rich.align import Align
 from rich.console import Console, Group
 from rich.panel import Panel
+from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from permission_map import __app_name__, __version__
-from permission_map.cli import logo as logo_module
+from permission_map import __version__
+from permission_map.cli.logo import render_logo
 from permission_map.database.db import Database
-from permission_map.utils.theme import (
-    BRAND_STYLE,
-    CYAN,
-    GRAY,
-    MUTED_STYLE,
-    OK_STYLE,
-    PURPLE,
-    TEXT_STYLE,
-    WARN_STYLE,
-    WHITE,
-)
+from permission_map.utils.theme import CYAN, GRAY, GREEN, MUTED_STYLE, PURPLE, WHITE
+
+_BRACKET_STYLE = Style(dim=True)
+_LABEL_STYLE = Style(color=CYAN)
+_VALUE_STYLE = Style(color=WHITE, bold=True)
+_ENGINE_STYLE = Style(color=PURPLE, bold=True)
 
 
-def _thousands(value: int) -> str:
-    return f"{value:,}"
-
-
-def _ellipsize(value: str, max_length: int = 72) -> str:
-    """Shorten long values with a middle ellipsis to keep tables tidy."""
-    if len(value) <= max_length:
-        return value
-    keep = (max_length - 1) // 2
-    return f"{value[:keep]}…{value[-keep:]}"
-
-
-def _key_value_table() -> Table:
-    table = Table(show_header=False, box=None, padding=(0, 0, 0, 2))
-    table.add_column("label", style=MUTED_STYLE, justify="left", no_wrap=True)
-    table.add_column("value", style=TEXT_STYLE, justify="left", no_wrap=True)
-    return table
-
-
-def _brand_header(console: Console) -> None:
-    name = Text(__app_name__, style=BRAND_STYLE)
-    console.print(name, justify="center")
-    console.print(
-        Text("ACCESS INTELLIGENCE & REVIEW ENGINE", style=CYAN),
-        justify="center",
-    )
-    console.print(
-        Text(
-            f"v{__version__}  •  local-first  •  read-only analysis  •  no telemetry",
-            style=MUTED_STYLE,
-        ),
-        justify="center",
-    )
-    console.print("")
-
-
-def _database_panel(console: Console, db: Database) -> None:
+def render_status_lines(console: Console, db: Database) -> None:
+    """Print the live [SYSTEM]/[DATABASE]/[ENGINE]/[VERSION] status lines."""
     status = db.status()
-    table = _key_value_table()
-    table.add_row("Path", _ellipsize(status["path"], 46))
-    table.add_row(
-        "Schema",
-        f"v{status['schema_version']}" if status["schema_version"] else "not initialized",
+    engine_state = "READY" if status["last_analysis_at"] else "STANDBY"
+    database_state = "READY" if status["initialized"] else "NOT INITIALIZED"
+    database_style = Style(color=GREEN, bold=True) if status["initialized"] else Style(
+        color="yellow", bold=True
     )
-    if status["initialized"]:
-        table.add_row("Status", "initialized", style=OK_STYLE)
-    else:
-        table.add_row("Status", "not initialized", style=WARN_STYLE)
-    table.add_row("Last analysis", status["last_analysis_at"] or "never")
-    panel = Panel(
-        table,
-        title="[pm.brand]DATABASE[/pm.brand]",
-        border_style=CYAN,
-        box=box.ROUNDED,
-        expand=False,
-    )
-    console.print(Align.center(panel))
-    console.print("")
+    entries: list[tuple[str, str, Style]] = [
+        ("SYSTEM", "INITIALIZED", Style(color=CYAN, bold=True)),
+        ("DATABASE", database_state, database_style),
+        ("ENGINE", engine_state, _ENGINE_STYLE),
+        ("VERSION", __version__, MUTED_STYLE),
+    ]
+    width = max(len(f"[ {label} ]") for label, _, _ in entries) + 5
+    for label, value, style in entries:
+        left = Text.assemble(
+            ("[ ", _BRACKET_STYLE), (label, _LABEL_STYLE), (" ]", _BRACKET_STYLE)
+        )
+        left.pad_right(width)
+        line = Text.assemble(left, (value, style))
+        line.justify = "center"
+        console.print(line)
 
 
-def _summary_panel(console: Console, db: Database) -> None:
-    counts = db.status()["counts"]
-    findings = _finding_summary(db)
-    snapshots = _snapshot_count(db)
-    reviews = _review_count(db)
+def render_overview(console: Console, db: Database) -> None:
+    """Print the QUICK OVERVIEW panel with real counts from the database."""
+    counts = db.counts()
+    privileged = db.privileged_user_count()
+    findings = db.open_finding_count()
 
-    body = _key_value_table()
-    body.add_row("Total Users", _thousands(counts["users"]))
-    body.add_row("Total Groups", _thousands(counts["groups"]))
-    body.add_row("Total Roles", _thousands(counts["roles"]))
-    body.add_row("Total Resources", _thousands(counts["resources"]))
-    body.add_row("Total Permissions", _thousands(counts["permissions"]))
-    body.add_row("", "")
-    body.add_row("Critical Findings", _thousands(findings["critical"]))
-    body.add_row("High Risk", _thousands(findings["high"]))
-    body.add_row("Review Required", _thousands(findings["review"]))
-    body.add_row("", "")
-    body.add_row("Access Snapshots", _thousands(snapshots))
-    body.add_row("Reviews Recorded", _thousands(reviews))
+    table = Table(show_header=False, box=None, padding=(0, 1), expand=False)
+    table.add_column(justify="right", style=MUTED_STYLE)
+    table.add_column(justify="left", style=_VALUE_STYLE)
+    table.add_column(justify="right", style=MUTED_STYLE)
+    table.add_column(justify="left", style=_VALUE_STYLE)
+    table.add_row("USERS", f"{counts['users']:,}", "GROUPS", f"{counts['groups']:,}")
+    table.add_row("ROLES", f"{counts['roles']:,}", "RESOURCES", f"{counts['resources']:,}")
+    table.add_row("PRIVILEGED", f"{privileged:,}", "FINDINGS", f"{findings:,}")
 
     panel = Panel(
-        body,
-        title="[pm.brand]ACCESS INTELLIGENCE[/pm.brand]",
-        border_style=PURPLE,
-        box=box.ROUNDED,
-        expand=False,
-    )
-    console.print(Align.center(panel))
-    console.print("")
-
-
-def _next_steps(console: Console) -> None:
-    steps = Group(
-        Text("import data  →  permission-map import <file>", style=WHITE),
-        Text("analyze      →  permission-map analyze", style=WHITE),
-        Text("map access   →  permission-map map", style=WHITE),
-        Text("compare      →  permission-map compare --baseline a --current b", style=WHITE),
-        Text("full help    →  permission-map --help", style=WHITE),
-    )
-    panel = Panel(
-        steps,
-        title="[pm.warn]NEXT STEPS[/pm.warn]",
+        Align.center(table),
+        title=Text("QUICK OVERVIEW", style=Style(color=CYAN)),
         border_style=GRAY,
         box=box.ROUNDED,
         expand=False,
     )
     console.print(Align.center(panel))
+
+
+def _commands_panel(console: Console) -> None:
+    steps = Group(
+        Text("permission-map            → interactive menu", style=WHITE),
+        Text("permission-map dashboard  → this summary (non-interactive)", style=WHITE),
+        Text("permission-map version    → print the version", style=WHITE),
+        Text("permission-map --help     → every command", style=WHITE),
+    )
+    panel = Panel(
+        steps,
+        title=Text("COMMANDS", style=Style(color=CYAN)),
+        border_style=GRAY,
+        box=box.ROUNDED,
+        expand=False,
+    )
+    console.print(Align.center(panel))
+
+
+def render_dashboard(console: Console, db: Database) -> None:
+    """Render the full non-interactive dashboard (logo + status + overview)."""
+    console.print("")
+    render_logo(console)
+    console.print("")
+    render_status_lines(console, db)
+    console.print("")
+    render_overview(console, db)
+    console.print("")
+    _commands_panel(console)
     console.print("")
 
 
-def _finding_summary(db: Database) -> dict[str, int]:
-    """Count findings by severity bucket from the real findings table."""
-    result = {"critical": 0, "high": 0, "review": 0}
-    if not db.exists():
-        return result
-    with db.connection() as connection:
-        rows = connection.execute(
-            "SELECT severity, COUNT(*) AS n FROM findings GROUP BY severity"
-        ).fetchall()
-    for row in rows:
-        severity = (row["severity"] or "").lower()
-        if severity == "critical":
-            result["critical"] = int(row["n"])
-        elif severity == "high":
-            result["high"] = int(row["n"])
-        elif severity in {"medium", "review"}:
-            result["review"] += int(row["n"])
-    return result
-
-
-def _snapshot_count(db: Database) -> int:
-    if not db.exists():
-        return 0
-    with db.connection() as connection:
-        row = connection.execute("SELECT COUNT(*) AS n FROM snapshots").fetchone()
-    return int(row["n"])
-
-
-def _review_count(db: Database) -> int:
-    if not db.exists():
-        return 0
-    with db.connection() as connection:
-        row = connection.execute("SELECT COUNT(*) AS n FROM access_reviews").fetchone()
-    return int(row["n"])
-
-
-def render_dashboard(console: Console, db: Database, logo_index: int | None = None) -> None:
-    """Render the full startup dashboard."""
+def render_app_banner(console: Console, db: Database) -> None:
+    """Render the startup banner shared by the dashboard and the interactive shell."""
     console.print("")
-    logo_module.render_logo(console, index=logo_index)
+    render_logo(console)
     console.print("")
-    _brand_header(console)
-    _database_panel(console, db)
-    _summary_panel(console, db)
-    _next_steps(console)
+    render_status_lines(console, db)
+    console.print("")
+    render_overview(console, db)
+    console.print("")
+
+
+__all__ = [
+    "render_dashboard",
+    "render_app_banner",
+    "render_status_lines",
+    "render_overview",
+]

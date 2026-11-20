@@ -15,12 +15,14 @@ The `permission-map` entry point is now available.
 ## Commands
 
 ```bash
-permission-map                 # open the startup dashboard
+permission-map                 # open the interactive menu (brand banner + actions)
 permission-map --help          # list all commands and examples
-permission-map dashboard       # dashboard with live database status
-permission-map dashboard --logo 3   # force a specific logo variant (0-4)
+permission-map dashboard       # non-interactive dashboard with live database status
 permission-map version         # print the installed version
 ```
+
+Inside the interactive menu, type a number to select an action, or `help` to
+see the options, `settings` for configuration, and `exit`/`0` to quit.
 
 Data import, analysis, mapping, comparison, review and reporting commands are
 added in subsequent development phases.

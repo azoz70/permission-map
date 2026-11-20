@@ -244,6 +244,26 @@ class Database:
             ).fetchone()
         return row["value"] if row else None
 
+    def privileged_user_count(self) -> int:
+        """Return the number of users flagged as privileged."""
+        if not self.exists():
+            return 0
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT COUNT(*) AS n FROM users WHERE is_privileged = 1"
+            ).fetchone()
+        return int(row["n"])
+
+    def open_finding_count(self) -> int:
+        """Return the number of open findings."""
+        if not self.exists():
+            return 0
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT COUNT(*) AS n FROM findings WHERE status = 'open'"
+            ).fetchone()
+        return int(row["n"])
+
     def status(self) -> dict:
         """Return a snapshot of database state for the dashboard.
 

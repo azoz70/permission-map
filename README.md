@@ -23,8 +23,9 @@ cloud, no subscriptions, no telemetry.
 - **Access review** — record approve / reject / investigate decisions with an
   auditable history.
 - **Reporting** — HTML, CSV, JSON and summary reports.
-- **Beautiful CLI** — a branded terminal experience with a randomized ASCII logo,
-  panels, tables and a live dashboard, powered by Typer + Rich.
+- **Beautiful CLI** — a branded terminal experience with a fixed block-letter
+  logo, an interactive menu, panels, tables and a live dashboard, powered by
+  Typer + Rich.
 
 ## Technology
 
@@ -41,7 +42,7 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 
-permission-map            # startup dashboard
+permission-map            # interactive menu (brand banner + actions)
 permission-map --help     # all commands
 ```
 
@@ -71,7 +72,7 @@ permission-map/
 
 | Phase | Scope | Status |
 | ----- | ----- | ------ |
-| 1 | Project skeleton, CLI startup, five randomized logos, dashboard, SQLite schema | ✅ done |
+| 1 | Project skeleton, CLI startup, fixed block-letter logo, interactive menu, dashboard, SQLite schema | ✅ done |
 | 2 | CSV import + validation | ⏳ next |
 | 3 | Mapping / graph engine | ⏳ |
 | 4 | Analysis & risk rules | ⏳ |

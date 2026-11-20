@@ -1,128 +1,61 @@
-"""ASCII logo variants for PERMISSION MAP.
+"""Fixed startup logo for PERMISSION MAP.
 
-Five distinct, hand-tuned logos express the core concepts of the tool — access
-mapping, identity relationships and network nodes. One variant is chosen at
-random on every startup so each run feels alive, while the color stays fixed to
-the brand cyan so the terminal never looks noisy.
+A single, hand-tuned block-letter mark (``PERM``) inside a double-line frame,
+followed by the full name, tagline and the three pillars of the tool. The color
+stays within the brand palette so the screen never looks noisy.
 """
 
 from __future__ import annotations
 
-import random
-from collections.abc import Sequence
-from dataclasses import dataclass
-
-from rich.console import Console
+from rich import box
+from rich.console import Console, Group
+from rich.panel import Panel
+from rich.style import Style
 from rich.text import Text
 
-from permission_map.utils.theme import CYAN, MUTED_STYLE
+from permission_map.utils.theme import BLUE, CYAN, GREEN, PURPLE, WHITE
 
-
-@dataclass(frozen=True)
-class Logo:
-    """A named ASCII logo variant."""
-
-    name: str
-    lines: tuple[str, ...]
-
-
-LOGOS: tuple[Logo, ...] = (
-    Logo(
-        name="access-matrix",
-        lines=(
-            "╭──────────────────────────────────╮",
-            "│         ACCESS  MATRIX           │",
-            "│                                  │",
-            "│      U     G     R     P         │",
-            "│    ┌─────┬─────┬─────┬─────┐     │",
-            "│    │  ●  │     │     │     │     │",
-            "│    │     │  ●  │     │     │     │",
-            "│    │     │     │  ●  │     │     │",
-            "│    │     │     │     │  ●  │     │",
-            "│    └─────┴─────┴─────┴─────┘     │",
-            "╰──────────────────────────────────╯",
-        ),
-    ),
-    Logo(
-        name="identity-chain",
-        lines=(
-            "  ┌────────┐   ┌────────┐   ┌────────┐   ┌──────────────┐",
-            "  │  USER  │──▶│ GROUP  │──▶│  ROLE  │──▶│  PERMISSION  │",
-            "  └────────┘   └────────┘   └────────┘   └──────────────┘",
-        ),
-    ),
-    Logo(
-        name="network-nodes",
-        lines=(
-            "        ● ────────────── ●",
-            "       ╱│                 │╲",
-            "      ╱ │                 │ ╲",
-            "     ●  │                 │  ●",
-            "      ╲ │                 │ ╱",
-            "       ╲│                 │╱",
-            "        ● ────────────── ●",
-            "            │        │",
-            "            └───●────┘",
-        ),
-    ),
-    Logo(
-        name="keyhole",
-        lines=(
-            "        ▄▄▄▄▄▄▄▄▄",
-            "      ▄▀         ▀▄",
-            "     ▀   ▄▄▄▄▄   ▀",
-            "     ▀   █   █   ▀",
-            "     ▀   █   █   ▀",
-            "      ▀▄ ▀▀▀▀▀ ▄▀",
-            "          █ █",
-            "          ▀ ▀",
-        ),
-    ),
-    Logo(
-        name="shield",
-        lines=(
-            "        ▄▄▄▄▄▄▄▄▄▄▄",
-            "       █           █",
-            "       █  ◉     ◉  █",
-            "       █   ▄▄▄▄▄   █",
-            "       █   █ █ █   █",
-            "       █   ▀▀▀▀▀   █",
-            "        ▀▄▄▄▄▄▄▄▄▄▀",
-        ),
-    ),
+# The "PERM" wordmark in block letters. Each line has the same width so the
+# frame is a clean rectangle.
+BLOCK: tuple[str, ...] = (
+    "█████╗ ███████╗██████╗ ███╗   ███╗",
+    "██╔══██╗██╔════╝██╔══██╗████╗ ████║",
+    "██████╔╝█████╗  ██████╔╝██╔████╔██║",
+    "██╔═══╝ ██╔══╝  ██╔══██╗██║╚██╔╝██║",
+    "██║     ███████╗██║  ██║██║ ╚═╝ ██║",
 )
 
-
-def logo_count() -> int:
-    """Return the number of available logo variants."""
-    return len(LOGOS)
-
-
-def pick_logo(seed: int | None = None) -> tuple[int, Logo]:
-    """Pick a random logo variant, returning its index and the Logo object."""
-    rng = random.Random(seed)
-    index = rng.randrange(len(LOGOS))
-    return index, LOGOS[index]
+_NAME_STYLE = Style(color=WHITE, bold=True)
+_TAGLINE_STYLE = Style(color=CYAN)
+_BLOCK_STYLE = Style(color=CYAN)
 
 
-def logo_at(index: int) -> Logo:
-    """Return the logo variant at the given index (0-based)."""
-    return LOGOS[index % len(LOGOS)]
-
-
-def render_logo(console: Console, index: int | None = None) -> Logo:
-    """Render a logo variant centered on the console and return it."""
-    logo = logo_at(index) if index is not None else pick_logo()[1]
-    for line in logo.lines:
-        text = Text(line, style=CYAN)
-        console.print(text, justify="center")
-    console.print(
-        Text(f"#{logo.name}", style=MUTED_STYLE),
+def _pillars() -> Text:
+    return Text.assemble(
+        ("IDENTITY", Style(color=BLUE, bold=True)),
+        ("  •  ", Style(dim=True)),
+        ("ACCESS", Style(color=GREEN, bold=True)),
+        ("  •  ", Style(dim=True)),
+        ("VISIBILITY", Style(color=PURPLE, bold=True)),
         justify="center",
     )
-    return logo
 
 
-def logo_line_widths() -> Sequence[int]:
-    """Return the maximum line width per variant (used in tests)."""
-    return [max(len(line) for line in logo.lines) for logo in LOGOS]
+def render_logo(console: Console) -> None:
+    """Print the fixed brand logo, centered on the console."""
+    content = Group(
+        *[Text(line, style=_BLOCK_STYLE, justify="center") for line in BLOCK],
+        Text("", justify="center"),
+        Text("P E R M I S S I O N   M A P", style=_NAME_STYLE, justify="center"),
+        Text("ACCESS INTELLIGENCE ENGINE", style=_TAGLINE_STYLE, justify="center"),
+        Text("", justify="center"),
+        _pillars(),
+    )
+    panel = Panel(
+        content,
+        box=box.DOUBLE_EDGE,
+        border_style=CYAN,
+        padding=(1, 2),
+        expand=False,
+    )
+    console.print(panel, justify="center")
