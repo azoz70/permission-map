@@ -180,6 +180,14 @@ def _ensure_column(
         connection.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
 
 
+def _restrict_permissions(path: Path, mode: int) -> None:
+    """Best-effort restriction of local files that hold access data."""
+    try:
+        path.chmod(mode)
+    except OSError:
+        pass
+
+
 class Database:
     """Manages the PERMISSION MAP SQLite database."""
 
@@ -214,6 +222,7 @@ class Database:
     def initialize(self) -> None:
         """Create the schema and stamp the schema version (idempotent)."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        _restrict_permissions(self.path.parent, 0o700)
         with self.connection() as connection:
             for statement in _SCHEMA:
                 connection.execute(statement)
@@ -224,6 +233,7 @@ class Database:
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 (str(SCHEMA_VERSION),),
             )
+        _restrict_permissions(self.path, 0o600)
 
     def ensure_initialized(self) -> None:
         """Initialize the database if it has not been initialized yet."""

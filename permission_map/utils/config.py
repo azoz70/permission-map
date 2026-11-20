@@ -34,7 +34,15 @@ def database_path() -> Path:
 
 
 def ensure_data_dir() -> Path:
-    """Create the data directory if needed and return its path."""
+    """Create the data directory if needed and return its path.
+
+    The directory is restricted to the current user (0700) because it holds
+    imported access data.
+    """
     directory = data_dir()
     directory.mkdir(parents=True, exist_ok=True)
+    try:
+        directory.chmod(0o700)
+    except OSError:
+        pass
     return directory
