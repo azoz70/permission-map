@@ -9,7 +9,7 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from permission_map.utils.theme import CYAN, GREEN, MUTED_STYLE, RED, WHITE, YELLOW
+from permission_map.utils.theme import BLUE, CYAN, GREEN, MUTED_STYLE, RED, WHITE, YELLOW
 
 # Entity -> (key, header) columns shown in the terminal table. Kept compact so
 # the table fits a normal terminal without truncating column values.
@@ -25,7 +25,7 @@ _COLUMNS: dict[str, tuple[tuple[str, str], ...]] = {
     "roles": (
         ("external_id", "ID"),
         ("name", "Name"),
-        ("description", "Description"),
+        ("role_type", "Type"),
         ("is_admin", "Admin"),
     ),
     "resources": (
@@ -58,6 +58,13 @@ _PRIVILEGED_STYLE = Style(color=RED, bold=True)
 _ACTIVE_STYLE = Style(color=GREEN, bold=True)
 _INACTIVE_STYLE = Style(color=YELLOW, bold=True)
 
+_ROLE_TYPE_STYLES: dict[str, Style] = {
+    "admin": Style(color=RED, bold=True),
+    "privileged": Style(color=YELLOW, bold=True),
+    "readonly": Style(color=BLUE),
+    "standard": Style(color=WHITE),
+}
+
 
 def _ellipsize(value: str, max_length: int = 28) -> str:
     if len(value) <= max_length:
@@ -69,6 +76,11 @@ def _ellipsize(value: str, max_length: int = 28) -> str:
 def _format_cell(key: str, value: object) -> str | Text:
     if key in _BOOLEAN_KEYS:
         return Text("yes", style=_PRIVILEGED_STYLE) if value else Text("no", style=MUTED_STYLE)
+    if key == "role_type":
+        if not value:
+            return "—"
+        role_type = str(value)
+        return Text(role_type, style=_ROLE_TYPE_STYLES.get(role_type, MUTED_STYLE))
     if key == "status":
         status = str(value or "")
         if status == "active":

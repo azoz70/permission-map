@@ -33,6 +33,7 @@ class Role(BaseModel):
     name: str | None = None
     description: str | None = None
     is_admin: bool = False
+    role_type: str | None = None
     source: str | None = None
 
 

@@ -27,6 +27,18 @@ Because source files use different headers, each import accepts a mapping from
 source header → canonical field. For example, a source column `Username` maps to
 `user_id`, and `Display Name` maps to `name`.
 
+## Role classification
+
+Roles are automatically classified from the `is_admin` flag and keywords in
+their name/description into one of four types:
+
+- `admin` — administrative / full-control roles
+- `privileged` — elevated but not full admin (operators, security/cloud admin)
+- `readonly` — viewers, auditors, readers
+- `standard` — regular business roles
+
+The detected type is stored and shown in `permission-map list roles`.
+
 ## Validation
 
 Every import is validated before it reaches the database:

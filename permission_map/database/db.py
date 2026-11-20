@@ -13,7 +13,7 @@ from pathlib import Path
 
 from permission_map.utils import config
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Order matters: parent tables must be created before tables that reference
 # them with foreign keys.
@@ -55,6 +55,7 @@ _SCHEMA: tuple[str, ...] = (
         name        TEXT,
         description TEXT,
         is_admin    INTEGER NOT NULL DEFAULT 0,
+        role_type   TEXT,
         source      TEXT,
         imported_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
@@ -166,6 +167,19 @@ _ENTITY_TABLES: tuple[str, ...] = (
 )
 
 
+def _column_names(connection: sqlite3.Connection, table: str) -> set[str]:
+    """Return the column names of a table."""
+    return {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
+
+
+def _ensure_column(
+    connection: sqlite3.Connection, table: str, column: str, ddl: str
+) -> None:
+    """Add a column to an existing table when it is missing (safe migration)."""
+    if column not in _column_names(connection, table):
+        connection.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+
+
 class Database:
     """Manages the PERMISSION MAP SQLite database."""
 
@@ -203,6 +217,8 @@ class Database:
         with self.connection() as connection:
             for statement in _SCHEMA:
                 connection.execute(statement)
+            # Safe migrations for databases created by earlier versions.
+            _ensure_column(connection, "roles", "role_type", "role_type TEXT")
             connection.execute(
                 "INSERT INTO metadata (key, value) VALUES ('schema_version', ?) "
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",

@@ -24,6 +24,7 @@ from permission_map.core.normalizer import (
     parse_bool,
     resolve_mapping,
 )
+from permission_map.core.role_classifier import classify_role
 from permission_map.database.db import Database
 from permission_map.database.repositories import existing_ids, persist
 from permission_map.utils.validators import (
@@ -183,6 +184,10 @@ def import_csv(
         # Pydantic model and database use the generic "external_id".
         if entity in KEY_FIELD:
             record["external_id"] = record.pop(KEY_FIELD[entity])
+        if entity == "roles":
+            record["role_type"] = classify_role(
+                record.get("name"), record.get("description"), bool(record.get("is_admin"))
+            )
         try:
             models.append(model_class(**record))
         except ValidationError as exc:

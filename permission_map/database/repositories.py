@@ -17,6 +17,7 @@ from permission_map.core.models import (
     Role,
     User,
 )
+from permission_map.core.role_classifier import classify_role
 from permission_map.database.db import Database
 
 _ALLOWED_TABLES = {"users", "groups", "roles", "resources"}
@@ -72,12 +73,13 @@ def upsert_roles(db: Database, roles: Sequence[Role]) -> int:
     if not roles:
         return 0
     sql = """
-        INSERT INTO roles (external_id, name, description, is_admin, source)
-        VALUES (:external_id, :name, :description, :is_admin, :source)
+        INSERT INTO roles (external_id, name, description, is_admin, role_type, source)
+        VALUES (:external_id, :name, :description, :is_admin, :role_type, :source)
         ON CONFLICT(external_id) DO UPDATE SET
             name = excluded.name,
             description = excluded.description,
             is_admin = excluded.is_admin,
+            role_type = excluded.role_type,
             source = excluded.source
     """
     with db.connection() as connection:
@@ -177,7 +179,10 @@ _LIST_QUERIES: dict[str, str] = {
         "FROM users ORDER BY external_id"
     ),
     "groups": "SELECT external_id, name, description FROM groups ORDER BY external_id",
-    "roles": "SELECT external_id, name, description, is_admin FROM roles ORDER BY external_id",
+    "roles": (
+        "SELECT external_id, name, role_type, description, is_admin "
+        "FROM roles ORDER BY external_id"
+    ),
     "resources": (
         "SELECT external_id, name, resource_type FROM resources ORDER BY external_id"
     ),
@@ -203,4 +208,14 @@ def fetch_records(db: Database, entity: str) -> list[dict]:
         raise ValueError(f"unsupported entity: {entity}")
     with db.connection() as connection:
         rows = connection.execute(_LIST_QUERIES[entity]).fetchall()
-    return [dict(row) for row in rows]
+    records = [dict(row) for row in rows]
+    # Older databases may predate the role_type column: classify on read.
+    if entity == "roles":
+        for record in records:
+            if not record.get("role_type"):
+                record["role_type"] = classify_role(
+                    record.get("name"),
+                    record.get("description"),
+                    bool(record.get("is_admin")),
+                )
+    return records

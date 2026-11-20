@@ -6,6 +6,7 @@ import csv
 from pathlib import Path
 
 from permission_map.database.db import Database
+from permission_map.database.repositories import fetch_records
 from permission_map.importers.csv_importer import import_csv
 
 
@@ -98,3 +99,25 @@ def test_import_missing_file(tmp_path) -> None:
     result = import_csv(database, tmp_path / "nope.csv")
     assert not result.ok
     assert "file not found" in result.errors[0].message
+
+
+def test_import_roles_classifies_type(tmp_path) -> None:
+    database = Database(tmp_path / "pm.db")
+    database.initialize()
+    file = tmp_path / "roles.csv"
+    _write(
+        file,
+        ["role_id", "name", "description", "is_admin"],
+        [
+            ["r-viewer", "Viewer", "read-only access", "false"],
+            ["r-admin", "Administrator", "full administrative access", "true"],
+            ["r-dev", "Developer", "code and deploy access", "false"],
+        ],
+    )
+    result = import_csv(database, file)
+    assert result.ok
+
+    types = {row["external_id"]: row["role_type"] for row in fetch_records(database, "roles")}
+    assert types["r-viewer"] == "readonly"
+    assert types["r-admin"] == "admin"
+    assert types["r-dev"] == "standard"
