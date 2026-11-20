@@ -29,8 +29,10 @@ BLOCK: tuple[str, ...] = (
 
 # Short, plain-language description of what the tool does.
 DESCRIPTION: tuple[str, ...] = (
-    "Map who has access to what — and why.",
-    "Detect excessive privileges and track changes.",
+    "This tool maps who has access to what — and why.",
+    "It traces users through groups, roles and permissions.",
+    "It detects excessive and privileged access.",
+    "It tracks every change across access reviews.",
 )
 
 # Fixed frame width (columns) so the box looks wide and tidy on a full screen.
