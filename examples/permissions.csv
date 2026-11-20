@@ -1,0 +1,7 @@
+permission_id,resource_id,name,action
+p-aws-read,res-aws,aws.console,read
+p-aws-admin,res-aws,aws.console,admin
+p-github-push,res-github,github.repo,push
+p-finance-read,res-erp,erp.finance,read
+p-splunk-read,res-splunk,splunk.search,read
+p-db-admin,res-db,postgres.db,admin

@@ -1,0 +1,6 @@
+role_id,name,description,is_admin
+r-viewer,Viewer,Read-only access to resources,false
+r-developer,Developer,Code and deploy access,false
+r-finance-reader,Finance Reader,Read financial reports,false
+r-admin,Administrator,Full administrative access,true
+r-security-analyst,Security Analyst,Investigate and review access,false

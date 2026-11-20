@@ -1,0 +1,5 @@
+group_id,name,description
+g-eng,Engineering,All engineering staff
+g-itops,IT Operations,System and cloud administrators
+g-finance,Finance,Finance team
+g-security,Security,Security operations team
