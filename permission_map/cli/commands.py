@@ -14,7 +14,7 @@ from rich.console import Console
 from permission_map import __app_name__, __description__, __version__
 from permission_map.cli.dashboard import render_dashboard
 from permission_map.cli.import_view import render_import_result
-from permission_map.cli.list_view import render_list
+from permission_map.cli.list_view import render_list, with_user_roles
 from permission_map.cli.map_view import render_map_summary, render_user_map
 from permission_map.cli.shell import render_help, run_shell
 from permission_map.core.graph_engine import PermissionGraph
@@ -108,7 +108,10 @@ def list_data(
             style="red",
         )
         raise typer.Exit(1)
-    render_list(console, canonical, fetch_records(database, canonical))
+    records = fetch_records(database, canonical)
+    if canonical == "users":
+        records = with_user_roles(records, PermissionGraph(database))
+    render_list(console, canonical, records)
 
 
 @app.command("map")

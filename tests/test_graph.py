@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from permission_map.cli.list_view import with_user_roles
 from permission_map.core.graph_engine import PermissionGraph, format_path
 from permission_map.database.db import Database
+from permission_map.database.repositories import fetch_records
 from permission_map.importers.csv_importer import import_csv
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
@@ -72,3 +74,13 @@ def test_unknown_user_has_no_access(tmp_path) -> None:
 
 def test_format_path() -> None:
     assert format_path(["user:u1", "group:g1", "role:r1", "permission:p1"]) == "u1 → g1 → r1 → p1"
+
+
+def test_user_list_includes_roles_and_inferred_privilege(tmp_path) -> None:
+    graph = _graph(tmp_path)
+    records = with_user_roles(fetch_records(graph.db, "users"), graph)
+    by_id = {record["external_id"]: record for record in records}
+    assert "r-admin" in by_id["u-1002"]["roles"]
+    assert by_id["u-1002"]["is_privileged"] == 1
+    assert by_id["u-1004"]["is_privileged"] == 0
+    assert by_id["u-1006"]["roles"] == ""

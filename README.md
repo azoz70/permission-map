@@ -39,7 +39,7 @@ cloud, no subscriptions, no telemetry.
 ### Import with validation
 ![Import result](docs/screenshots/05-import.png)
 
-### Users and privileged accounts
+### Users with their effective roles
 ![List users](docs/screenshots/02-list-users.png)
 
 ### Roles with automatic type detection

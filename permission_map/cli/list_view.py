@@ -9,6 +9,7 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
+from permission_map.core.graph_engine import PermissionGraph
 from permission_map.utils.theme import BLUE, CYAN, GREEN, MUTED_STYLE, RED, WHITE, YELLOW
 
 # Entity -> (key, header) columns shown in the terminal table. Kept compact so
@@ -17,9 +18,9 @@ _COLUMNS: dict[str, tuple[tuple[str, str], ...]] = {
     "users": (
         ("external_id", "ID"),
         ("name", "Name"),
-        ("email", "Email"),
+        ("roles", "Roles"),
         ("status", "Status"),
-        ("is_privileged", "Privileged"),
+        ("is_privileged", "Priv"),
     ),
     "groups": (("external_id", "ID"), ("name", "Name"), ("description", "Description")),
     "roles": (
@@ -65,6 +66,17 @@ _PRIVILEGED_STYLE = Style(color=RED, bold=True)
 _ACTIVE_STYLE = Style(color=GREEN, bold=True)
 _INACTIVE_STYLE = Style(color=YELLOW, bold=True)
 
+
+def with_user_roles(records: list[dict], graph: PermissionGraph) -> list[dict]:
+    """Attach each user's effective roles and inferred privilege to the record."""
+    for record in records:
+        access = graph.describe_user(record["external_id"])
+        record["roles"] = ", ".join(access.roles)
+        record["is_privileged"] = (
+            1 if (bool(record["is_privileged"]) or access.privileged) else 0
+        )
+    return records
+
 _ROLE_TYPE_STYLES: dict[str, Style] = {
     "admin": Style(color=RED, bold=True),
     "privileged": Style(color=YELLOW, bold=True),
@@ -83,6 +95,13 @@ def _ellipsize(value: str, max_length: int = 28) -> str:
 def _format_cell(key: str, value: object) -> str | Text:
     if key in _BOOLEAN_KEYS:
         return Text("yes", style=_PRIVILEGED_STYLE) if value else Text("no", style=MUTED_STYLE)
+    if key == "roles":
+        roles = [part.strip() for part in str(value or "").split(",") if part.strip()]
+        if not roles:
+            return "—"
+        if len(roles) <= 2:
+            return ", ".join(roles)
+        return f"{roles[0]}, {roles[1]} +{len(roles) - 2}"
     if key == "direct":
         return Text("yes" if value else "no", style=WHITE)
     if key == "role_type":

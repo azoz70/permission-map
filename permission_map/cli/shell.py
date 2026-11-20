@@ -28,7 +28,7 @@ from permission_map import (
 )
 from permission_map.cli.dashboard import render_app_banner, render_dashboard
 from permission_map.cli.import_view import render_import_result
-from permission_map.cli.list_view import render_list
+from permission_map.cli.list_view import render_list, with_user_roles
 from permission_map.cli.map_view import render_map_summary, render_user_map
 from permission_map.core.graph_engine import PermissionGraph
 from permission_map.core.normalizer import normalize_entity
@@ -216,7 +216,10 @@ def handle_command(
                 justify="center",
             )
         else:
-            render_list(console, canonical, fetch_records(db, canonical))
+            records = fetch_records(db, canonical)
+            if canonical == "users":
+                records = with_user_roles(records, PermissionGraph(db))
+            render_list(console, canonical, records)
         return True
 
     if command == "map" or command.startswith("map "):
