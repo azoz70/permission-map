@@ -6,6 +6,7 @@ from pathlib import Path
 
 from permission_map.core.normalizer import (
     detect_entity,
+    normalize_entity,
     normalize_status,
     parse_bool,
     resolve_mapping,
@@ -58,3 +59,12 @@ def test_resolve_mapping_honors_overrides() -> None:
     )
     assert mapping["user_id"] == "Login"
     assert mapping["name"] == "Full Name"
+
+
+def test_normalize_entity() -> None:
+    assert normalize_entity("users") == "users"
+    assert normalize_entity("user") == "users"
+    assert normalize_entity("GROUPS") == "groups"
+    assert normalize_entity("permissions") == "permissions"
+    assert normalize_entity("memberships") == "memberships"
+    assert normalize_entity("nonsense") is None

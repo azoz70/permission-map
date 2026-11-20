@@ -169,3 +169,38 @@ def existing_ids(db: Database, entity: str) -> set[str]:
     with db.connection() as connection:
         rows = connection.execute(f"SELECT external_id FROM {entity}").fetchall()
     return {row["external_id"] for row in rows}
+
+
+_LIST_QUERIES: dict[str, str] = {
+    "users": (
+        "SELECT external_id, name, email, department, job_title, status, is_privileged "
+        "FROM users ORDER BY external_id"
+    ),
+    "groups": "SELECT external_id, name, description FROM groups ORDER BY external_id",
+    "roles": "SELECT external_id, name, description, is_admin FROM roles ORDER BY external_id",
+    "resources": (
+        "SELECT external_id, name, resource_type FROM resources ORDER BY external_id"
+    ),
+    "permissions": (
+        "SELECT p.external_id AS external_id, COALESCE(r.name, r.external_id) AS resource, "
+        "p.name AS name, p.action AS action "
+        "FROM permissions p LEFT JOIN resources r ON r.id = p.resource_id "
+        "ORDER BY p.external_id"
+    ),
+    "memberships": (
+        "SELECT u.external_id AS user_id, g.external_id AS group_id "
+        "FROM memberships m "
+        "JOIN users u ON u.id = m.user_id "
+        "JOIN groups g ON g.id = m.group_id "
+        "ORDER BY u.external_id, g.external_id"
+    ),
+}
+
+
+def fetch_records(db: Database, entity: str) -> list[dict]:
+    """Return all records of an entity as a list of dicts for display."""
+    if entity not in _LIST_QUERIES:
+        raise ValueError(f"unsupported entity: {entity}")
+    with db.connection() as connection:
+        rows = connection.execute(_LIST_QUERIES[entity]).fetchall()
+    return [dict(row) for row in rows]

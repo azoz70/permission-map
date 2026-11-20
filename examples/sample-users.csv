@@ -1,0 +1,5 @@
+user_id,name,email,status,is_privileged
+s-001,Sara Ahmed,sara@example.com,active,false
+s-002,Omar Ali,omar@example.com,active,false
+s-003,Lina Hassan,lina@example.com,suspended,false
+s-004,Khaled Mahmoud,khaled@example.com,active,true

@@ -14,8 +14,11 @@ from rich.console import Console
 from permission_map import __app_name__, __description__, __version__
 from permission_map.cli.dashboard import render_dashboard
 from permission_map.cli.import_view import render_import_result
+from permission_map.cli.list_view import render_list
 from permission_map.cli.shell import run_shell
+from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import get_database
+from permission_map.database.repositories import fetch_records
 from permission_map.importers.csv_importer import import_csv
 from permission_map.utils.theme import get_theme
 
@@ -82,6 +85,26 @@ def import_data(
     overrides = _parse_mapping(map_)
     result = import_csv(database, file, entity_type=type_, column_overrides=overrides)
     render_import_result(console, result)
+
+
+@app.command("list")
+def list_data(
+    entity: str = typer.Argument(
+        ..., help="Entity to list (users|groups|roles|resources|permissions|memberships)."
+    ),
+) -> None:
+    """List imported records of one entity as a table."""
+    console = _console()
+    database = get_database()
+    canonical = normalize_entity(entity)
+    if canonical is None:
+        console.print(
+            f"Unknown entity '{entity}'. Use one of: users, groups, roles, resources, "
+            "permissions, memberships.",
+            style="red",
+        )
+        raise typer.Exit(1)
+    render_list(console, canonical, fetch_records(database, canonical))
 
 
 @app.command()

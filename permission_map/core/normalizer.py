@@ -137,6 +137,12 @@ def normalize_key(value: str) -> str:
     return _norm(value)
 
 
+def normalize_entity(name: str) -> str | None:
+    """Map a user-facing entity name (singular/plural) to its canonical form."""
+    key = _norm(name).replace(" ", "_").replace("-", "_")
+    return STEM_TO_ENTITY.get(key)
+
+
 def detect_entity(headers: list[str], filename: Path | None = None) -> str | None:
     """Determine which entity a file describes, using filename then columns."""
     if filename is not None:

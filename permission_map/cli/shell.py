@@ -18,7 +18,10 @@ from rich.text import Text
 from permission_map import __app_name__, __version__
 from permission_map.cli.dashboard import render_app_banner
 from permission_map.cli.import_view import render_import_result
+from permission_map.cli.list_view import render_list
+from permission_map.core.normalizer import normalize_entity
 from permission_map.database.db import Database
+from permission_map.database.repositories import fetch_records
 from permission_map.importers.csv_importer import import_csv
 from permission_map.utils.theme import CYAN, MUTED_STYLE, WARN_STYLE, WHITE
 
@@ -108,6 +111,20 @@ def handle_command(
         return True
     if command in {"clear", "cls"}:
         console.clear()
+        return True
+    if command.startswith("list"):
+        entity_name = command.split(" ", 1)[1].strip() if " " in command else ""
+        canonical = normalize_entity(entity_name) if entity_name else None
+        if canonical is None:
+            console.print(
+                Text(
+                    "Usage: list <users|groups|roles|resources|permissions|memberships>",
+                    style=WARN_STYLE,
+                ),
+                justify="center",
+            )
+        else:
+            render_list(console, canonical, fetch_records(db, canonical))
         return True
     if command in _PHASE:
         label = dict(MENU_ITEMS)[command]
