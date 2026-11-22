@@ -13,7 +13,7 @@ from pathlib import Path
 
 from permission_map.utils import config
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 # Order matters: parent tables must be created before tables that reference
 # them with foreign keys.
@@ -161,6 +161,41 @@ _SCHEMA: tuple[str, ...] = (
         description TEXT,
         details     TEXT,
         created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS role_assignment_target "
+    "ON role_assignments(role_id, group_id, user_id)",
+    """
+    CREATE TABLE IF NOT EXISTS review_campaigns (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        reviewer TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        closed_at TEXT
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS campaign_items (
+        id INTEGER PRIMARY KEY,
+        campaign_id INTEGER NOT NULL REFERENCES review_campaigns(id),
+        account TEXT NOT NULL,
+        evidence TEXT NOT NULL,
+        decision TEXT CHECK (decision IN ('approve', 'reject', 'investigate')),
+        reason TEXT,
+        UNIQUE (campaign_id, account)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS campaign_events (
+        id INTEGER PRIMARY KEY,
+        campaign_id INTEGER NOT NULL REFERENCES review_campaigns(id),
+        item_id INTEGER REFERENCES campaign_items(id),
+        kind TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        previous_decision TEXT,
+        decision TEXT,
+        reason TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
     """,
 )

@@ -49,6 +49,7 @@ DUP_KEY: dict[str, str | tuple[str, ...]] = {
     "roles": "role_id",
     "resources": "resource_id",
     "permissions": "permission_id",
+    "memberships": ("user_id", "group_id"),
     "role_assignments": ("role_id", "group_id", "user_id"),
     "role_permissions": ("role_id", "permission_id"),
 }
@@ -59,9 +60,20 @@ _REFERENCE_ENTITIES = ("users", "groups", "roles", "resources", "permissions")
 def read_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     """Read a CSV file into (headers, rows) with UTF-8 BOM tolerance."""
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        headers = [header.strip() for header in (reader.fieldnames or [])]
-        rows = [{key: (value or "").strip() for key, value in row.items()} for row in reader]
+        return read_tabular_rows(csv.reader(handle, strict=True))
+
+
+def read_tabular_rows(table) -> tuple[list[str], list[dict[str, str]]]:
+    headers = [column.strip() for column in next(table, [])]
+    if headers and (not all(headers) or len(set(headers)) != len(headers)):
+        raise ValueError("Empty or duplicate column names")
+    rows = []
+    for number, values in enumerate(table, start=2):
+        if not values:
+            continue
+        if len(values) != len(headers):
+            raise ValueError(f"Wrong number of columns on row {number}")
+        rows.append(dict(zip(headers, (value.strip() for value in values), strict=True)))
     return headers, rows
 
 
@@ -117,7 +129,6 @@ def _coerce(
 
 def _normalize_rows(
     entity: str,
-    headers: list[str],
     rows: list[dict[str, str]],
     mapping: dict[str, str],
 ) -> tuple[list[dict], list[Issue]]:
@@ -140,7 +151,6 @@ def import_csv(
     column_overrides: dict[str, str] | None = None,
 ) -> ImportResult:
     """Import a CSV file into the database and return a structured result."""
-    source = path.name
     result = ImportResult(entity="", path=str(path))
 
     if not path.exists():
@@ -149,10 +159,23 @@ def import_csv(
 
     try:
         headers, rows = read_csv(path)
-    except (OSError, csv.Error) as exc:
+    except (OSError, csv.Error, ValueError) as exc:
         result.issues.append(Issue("error", f"could not read CSV: {exc}"))
         return result
 
+    return import_rows(db, path, headers, rows, entity_type, column_overrides)
+
+
+def import_rows(
+    db: Database,
+    path: Path,
+    headers: list[str],
+    rows: list[dict[str, str]],
+    entity_type: str | None = None,
+    column_overrides: dict[str, str] | None = None,
+) -> ImportResult:
+    source = path.name
+    result = ImportResult(entity="", path=str(path))
     if not headers:
         result.issues.append(Issue("error", "the file has no header row"))
         return result
@@ -173,7 +196,7 @@ def import_csv(
     for header in unmatched:
         result.issues.append(Issue("warning", f"column '{header}' was not recognized"))
 
-    records, issues = _normalize_rows(entity, headers, rows, mapping)
+    records, issues = _normalize_rows(entity, rows, mapping)
     result.issues.extend(issues)
 
     result.issues.extend(validate_required(records, entity))

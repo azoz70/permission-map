@@ -1,14 +1,198 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PERMISSION MAP</title><style>
-:root{font-family:system-ui,Arial;color:#e9f3ed;background:#0d1516}*{box-sizing:border-box}body{margin:0}header{padding:24px 5%;border-bottom:1px solid #344539;display:flex;justify-content:space-between;align-items:center}strong{color:#83c441}main{max-width:1120px;margin:36px auto;padding:0 20px}.muted{color:#a0b6ad}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}.card{background:#172525;border:1px solid #304237;border-radius:12px;padding:20px;margin-bottom:14px}.num{font-size:32px;font-weight:700;color:#83c441}.notice{border-left:3px solid #83c441;padding:12px 18px;background:#172525;margin:22px 0}h1{font-size:26px}h2{font-size:20px}li{margin:12px 0}button{background:#83c441;color:#101b12;border:0;border-radius:7px;padding:10px 15px;font-weight:700;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid white}nav{display:flex;gap:8px;flex-wrap:wrap}section[hidden]{display:none}input,select{padding:10px;background:#21332c;color:#fff;border:1px solid #58715d;border-radius:6px;margin:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere}
-</style></head><body><header><div><h1>PERMISSION <strong>MAP</strong></h1><div class="muted">Access Review & Governance · Local Edition</div></div><nav><button onclick="show('overview')">Overview</button><button onclick="show('import')">Import CSV</button><button onclick="show('access');loadAccess()">Access</button><button onclick="show('hr')">HR Match</button><button onclick="show('guide')">How It Works</button></nav></header><main>
-<section id="overview"><h2>Governance overview</h2><p class="muted">Live data from the local database.</p><div class="grid"><div class="card"><div class="muted">Users</div><div class="num" id="users">—</div></div><div class="card"><div class="muted">Roles</div><div class="num" id="roles">—</div></div><div class="card"><div class="muted">Permissions</div><div class="num" id="permissions">—</div></div><div class="card"><div class="muted">Resources</div><div class="num" id="resources">—</div></div></div><div class="notice" id="status">Loading local data…</div></section>
-<section id="import" hidden><h2>Import local CSV</h2><div class="card"><p class="muted">Choose a CSV file and its entity type. Import validates and writes to the same local SQLite database as the CLI. Only CSV is supported in this iteration. Do not use production records yet.</p><label>Entity type <select id="entity"><option>resources</option><option>users</option><option>groups</option><option>roles</option><option>permissions</option><option>memberships</option><option>role_permissions</option><option>role_assignments</option></select></label><label>CSV file <input id="file" type="file" accept=".csv,text/csv"></label><button id="submit" onclick="upload()">Validate & Import</button><pre id="result" role="status" aria-live="polite"></pre></div><div class="notice">Recommended fixture order: resources → users → groups → roles → permissions → memberships → role_permissions → role_assignments. HR master reconciliation is not supported yet.</div></section>
-<section id="access" hidden><h2>Effective access</h2><div class="card"><p class="muted">Access paths from the existing permission graph.</p><pre id="accessResults">Select Access to load.</pre></div></section><section id="hr" hidden><h2>HR reconciliation</h2><div class="card"><p>Import HR master CSV with employee_id,email,employment_status. Matching is read-only and performed locally; HR file is not saved.</p><input id="hrFile" type="file" accept=".csv,text/csv"><button onclick="matchHR()">Match accounts</button><pre id="hrResults" role="status"></pre></div></section><section id="guide" hidden><h2>About PERMISSION MAP</h2><p>Local-first access analysis for imported system exports. It helps identify who has access to what and how access was granted.</p><ol><li>Export users, roles, resources, permissions and relationships.</li><li>Choose each CSV type and import it in dependency order.</li><li>Review the live dashboard.</li><li>Use the existing CLI map/analyze commands for deeper analysis.</li><li>Future: HR matching, review campaigns, remediation verification and reports.</li></ol><div class="notice">This interface does not revoke access. Findings are review candidates, not automatic policy violations. Keep the service on localhost.</div><p class="muted">Created by Abdulaziz Alshehri</p></section>
-</main><script>
+:root{font-family:system-ui,Arial;color:#e9f3ed;background:#0d1516}*{box-sizing:border-box}body{margin:0}header{flex-wrap:wrap;gap:14px;padding:24px 5%;border-bottom:1px solid #344539;display:flex;justify-content:space-between;align-items:center}strong{color:#83c441}main{max-width:1120px;margin:36px auto;padding:0 20px}.muted{color:#a0b6ad}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}.card{background:#172525;border:1px solid #304237;border-radius:12px;padding:20px;margin-bottom:14px}.num{font-size:32px;font-weight:700;color:#83c441}.notice{border-left:3px solid #83c441;padding:12px 18px;background:#172525;margin:22px 0}h1{font-size:26px}h2{font-size:20px}li{margin:12px 0}button{background:#83c441;color:#101b12;border:0;border-radius:7px;padding:10px 15px;font-weight:700;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid white}nav{display:flex;gap:8px;flex-wrap:wrap}section[hidden]{display:none}input,select{padding:10px;background:#21332c;color:#fff;border:1px solid #58715d;border-radius:6px;margin:8px}input[type=file]{max-width:100%;margin-left:0}label{display:block}a{color:#a9e56e}pre{white-space:pre-wrap;overflow-wrap:anywhere}
+</style></head><body><header><div><h1>PERMISSION <strong>MAP</strong></h1><div class="muted">Access Review & Governance · Local Edition</div></div><nav><button data-action="0">Overview</button><button data-action="1">Import</button><button data-action="2">Access</button><button data-action="3">HR Match</button><button data-action="4">Reviews</button><button data-action="5">How It Works</button></nav></header><main>
+<section id="overview"><h2>Governance overview</h2><p class="muted">Live data from the local database.</p><div class="grid"><div class="card"><div class="muted">Users</div><div class="num" id="users">—</div></div><div class="card"><div class="muted">Roles</div><div class="num" id="roles">—</div></div><div class="card"><div class="muted">Permissions</div><div class="num" id="permissions">—</div></div><div class="card"><div class="muted">Resources</div><div class="num" id="resources">—</div></div></div><div class="notice" id="status" role="status">Loading local data…</div></section>
+<section id="import" hidden><h2>Import access data</h2><div class="card"><p class="muted">Choose a CSV or single-sheet XLSX file and its entity type. Valid rows are saved to the local CLI database.</p><label>Entity type <select id="entity"><option>resources</option><option>users</option><option>groups</option><option>roles</option><option>permissions</option><option>memberships</option><option>role_permissions</option><option>role_assignments</option></select></label><label>Access file <input id="file" type="file" accept=".csv,.xlsx"></label><button id="submit" data-action="6">Validate & Import</button><pre id="result" role="status" aria-live="polite"></pre></div><div class="notice">Recommended fixture order: resources → users → groups → roles → permissions → memberships → role_permissions → role_assignments.</div></section>
+<section id="access" hidden><h2>Effective access</h2><div class="card"><p class="muted">Access paths from the existing permission graph.</p><pre id="accessResults" role="status">Select Access to load.</pre></div></section><section id="hr" hidden><h2>HR reconciliation</h2><div class="card"><p>Import HR master CSV with employee_id,email,employment_status. Matching is read-only and performed locally; HR file is not saved.</p><label>HR CSV <input id="hrFile" type="file" accept=".csv,text/csv"></label><button data-action="7">Match accounts</button><pre id="hrResults" role="status"></pre></div></section><section id="guide" hidden><h2>About PERMISSION MAP</h2><p>Local-first access analysis for imported system exports. It helps identify who has access to what and how access was granted.</p><ol><li>Export users, roles, resources, permissions and relationships.</li><li>Choose each file type and import it in dependency order.</li><li>Review the live dashboard.</li><li>Use the existing CLI map/analyze commands for deeper analysis.</li><li>Reconcile HR accounts and record decisions in a review campaign.</li></ol><div class="notice">This interface does not revoke access. Findings are review candidates, not automatic policy violations. Keep the service on localhost.</div><p class="muted">Created by Abdulaziz Alshehri</p></section>
+<section id="reviews" hidden>
+<h2>Review campaigns</h2>
+<form id="campaignForm" class="card">
+<label>Campaign name <input name="name" required maxlength="120"></label>
+<label>Reviewer <input name="reviewer" required maxlength="120"></label>
+<button>Create campaign</button>
+</form>
+<div class="card">
+<label>Campaign <select id="campaignSelect"></select></label>
+<p id="reviewStatus" role="status"></p>
+<div id="campaignActions" hidden>
+<p><a id="jsonReport">Download JSON and audit history</a> · <a id="csvReport">Download CSV</a></p>
+<button id="closeCampaign" type="button">Close campaign</button>
+<p id="decisionCounts"></p>
+<div id="campaignItems"></div>
+<button id="firstPage" type="button">First page</button>
+<button id="nextPage" type="button">Next page</button>
+</div>
+</div>
+</section></main><script>
 function show(id){document.querySelectorAll('main section').forEach(x=>x.hidden=x.id!==id)}
 async function refresh(){try{let r=await fetch('/api/summary');if(!r.ok)throw Error();let d=await r.json();for(const k of ['users','roles','permissions','resources'])document.getElementById(k).textContent=d[k]??'—';document.getElementById('status').textContent='Local database loaded.'}catch{document.getElementById('status').textContent='Unable to read local database.'}}
-async function upload(){let f=document.getElementById('file').files[0],out=document.getElementById('result'),btn=document.getElementById('submit');if(!f){out.textContent='Choose a CSV file first.';return}if(f.size>1800000){out.textContent='File too large (limit 1.8 MB).';return}btn.disabled=true;out.textContent='Validating and importing…';try{let content=await f.text();let r=await fetch('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entity:document.getElementById('entity').value,content})});let d=await r.json();out.textContent=(d.error||('Imported '+d.imported+' of '+d.total_rows+' rows into '+d.entity))+'\n'+(d.issues||[]).map(x=>x.severity+': '+x.message+(x.row?' (row '+x.row+')':'')).join('\n');if(r.ok)await refresh()}catch(e){out.textContent='Import failed: '+e.message}finally{btn.disabled=false}}
-async function loadAccess(){let out=document.getElementById("accessResults");out.textContent="Loading…";try{let r=await fetch("/api/access");let d=await r.json();if(!r.ok)throw Error(d.error);out.textContent=(d.users||[]).map(u=>u.external_id+" | "+u.name+" | "+u.status+" | privileged: "+u.privileged+"\\n"+u.grants.map(g=>"  "+g.resource+" / "+g.permission+" via "+g.path.join(" → ")).join("\\n")).join("\\n\\n")||"No accounts imported"}catch(e){out.textContent=e.message}}
-async function matchHR(){let f=document.getElementById("hrFile").files[0],out=document.getElementById("hrResults");if(!f){out.textContent="Choose HR CSV";return}if(f.size>1800000){out.textContent="File too large";return}out.textContent="Matching…";try{let r=await fetch("/api/hr-reconcile",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:await f.text()})});let d=await r.json();out.textContent=d.error||("Totals: "+JSON.stringify(d.totals)+"\\n"+d.accounts.map(a=>a.user_id+" | "+a.status+" | grants: "+a.grant_count).join("\\n")+"\\n"+d.limitations)}catch(e){out.textContent=e.message}}
-refresh()
+async function upload(){let f=document.getElementById('file').files[0],out=document.getElementById('result'),btn=document.getElementById('submit');if(!f){out.textContent='Choose a CSV or XLSX file first.';return}if(f.size>6000000){out.textContent='File too large (limit 6 MB).';return}btn.disabled=true;out.textContent='Validating and importing…';try{let format=f.name.toLowerCase().endsWith('.xlsx')?'xlsx':'csv';let content=format==='xlsx'?await workbookBase64(f):await f.text();let r=await fetch('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entity:document.getElementById('entity').value,content,format})});let d=await r.json();out.textContent=(d.error||('Imported '+d.imported+' of '+d.total_rows+' rows into '+d.entity))+'\n'+(d.issues||[]).map(x=>x.severity+': '+x.message+(x.row?' (row '+x.row+')':'')).join('\n');if(r.ok)await refresh()}catch(e){out.textContent='Import failed: '+e.message}finally{btn.disabled=false}}
+async function loadAccess(){let out=document.getElementById("accessResults");out.textContent="Loading…";try{let r=await fetch("/api/access");let d=await r.json();if(!r.ok)throw Error(d.error);out.textContent=(d.users||[]).map(u=>u.external_id+" | "+u.name+" | "+u.status+" | privileged: "+u.privileged+"\n"+u.grants.map(g=>"  "+g.resource+" / "+g.permission+" via "+g.path.join(" → ")).join("\n")).join("\n\n")||"No accounts imported"}catch(e){out.textContent=e.message}}
+async function matchHR(){let f=document.getElementById("hrFile").files[0],out=document.getElementById("hrResults");if(!f){out.textContent="Choose HR CSV";return}if(f.size>6000000){out.textContent="File too large";return}out.textContent="Matching…";try{let r=await fetch("/api/hr-reconcile",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:await f.text()})});let d=await r.json();out.textContent=d.error||("Totals: "+JSON.stringify(d.totals)+"\n"+d.accounts.map(a=>a.user_id+" | "+a.status+" | grants: "+a.grant_count).join("\n")+"\n"+d.limitations)}catch(e){out.textContent=e.message}}
+const byId = id => document.getElementById(id);
+async function workbookBase64(file) {
+  const data = new Uint8Array(await file.arrayBuffer());
+  const chunks = [];
+  for (let offset = 0; offset < data.length; offset += 16384) {
+    chunks.push(String.fromCharCode(...data.subarray(offset, offset + 16384)));
+  }
+  return btoa(chunks.join(''));
+}
+
+async function api(path, body) {
+  const response = await fetch(path, body === undefined ? {} : {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) throw Error(data.error);
+  return data;
+}
+
+const select = byId('campaignSelect');
+const status = byId('reviewStatus');
+const campaignUrl = () => '/api/campaigns/' + select.value;
+let cursor = 0;
+let nextCursor = null;
+let pageRequest = 0;
+
+async function loadCampaigns(preferred = select.value) {
+  try {
+    const data = await api('/api/campaigns');
+    select.replaceChildren(...data.campaigns.map(c => new Option(c.name, c.id)));
+    if (data.campaigns.some(c => String(c.id) === String(preferred))) select.value = preferred;
+    await loadCampaign(0);
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+async function loadCampaign(after) {
+  const request = ++pageRequest;
+  byId('campaignActions').hidden = true;
+  byId('campaignItems').replaceChildren();
+  if (!select.value) {
+    status.textContent = 'No campaigns yet.';
+    return;
+  }
+  status.textContent = 'Loading campaign…';
+  try {
+    const url = campaignUrl();
+    const data = await api(url + '?after=' + after);
+    if (request !== pageRequest) return;
+    cursor = after;
+    nextCursor = data.next_after;
+    const closed = Boolean(data.campaign.closed_at);
+    status.textContent = closed ? 'Campaign closed.' : 'Campaign open.';
+    byId('jsonReport').href = url + '/report.json';
+    byId('csvReport').href = url + '/report.csv';
+    byId('closeCampaign').disabled = closed || data.counts.pending > 0;
+    byId('decisionCounts').textContent = Object.entries(data.counts)
+      .map(([name, count]) => name + ' ' + count).join(' · ');
+    byId('campaignItems').replaceChildren(...data.items.map(item => reviewItem(item, closed, url)));
+    byId('firstPage').disabled = after === 0;
+    byId('nextPage').disabled = nextCursor === null;
+    byId('campaignActions').hidden = false;
+  } catch (error) {
+    if (request === pageRequest) status.textContent = error.message;
+  }
+}
+
+function reviewItem(item, closed, url) {
+  const form = document.createElement('form');
+  form.className = 'card';
+  const heading = document.createElement('h3');
+  heading.textContent = item.account + ' · ' + (item.evidence.name || item.account);
+  const evidence = document.createElement('pre');
+  evidence.textContent = (item.evidence.privileged ? 'Privileged account' : 'Standard account') +
+    '\n' + (item.evidence.grants.map(g => g.permission + ' via ' + g.path.join(' → ')).join('\n')
+    || 'No effective grants');
+  const choice = document.createElement('select');
+  choice.append(new Option('Choose a decision', ''), ...['approve', 'reject', 'investigate']
+    .map(decision => new Option(decision, decision)));
+  choice.required = true;
+  choice.value = item.decision || '';
+  choice.disabled = closed;
+  const reason = document.createElement('input');
+  reason.value = item.reason || '';
+  reason.required = true;
+  reason.maxLength = 2000;
+  reason.readOnly = closed;
+  const decisionLabel = document.createElement('label');
+  choice.id = 'decision-' + item.id;
+  decisionLabel.htmlFor = choice.id;
+  decisionLabel.textContent = 'Decision';
+  const reasonLabel = document.createElement('label');
+  reason.id = 'reason-' + item.id;
+  reasonLabel.htmlFor = reason.id;
+  reasonLabel.textContent = 'Reason';
+  const save = document.createElement('button');
+  save.textContent = 'Save decision';
+  save.disabled = closed;
+  const feedback = document.createElement('p');
+  feedback.setAttribute('role', 'status');
+  form.append(heading, evidence, decisionLabel, choice, reasonLabel, reason, save, feedback);
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    save.disabled = true;
+    try {
+      await api(url + '/items/' + item.id, {decision: choice.value, reason: reason.value});
+      if (campaignUrl() === url && form.isConnected) {
+        const counts = await api(url + '?after=' + cursor);
+        if (campaignUrl() === url && form.isConnected) {
+          byId('decisionCounts').textContent = Object.entries(counts.counts)
+            .map(([name, count]) => name + ' ' + count).join(' · ');
+          byId('closeCampaign').disabled = Boolean(counts.campaign.closed_at) || counts.counts.pending > 0;
+          feedback.textContent = 'Decision saved.';
+        }
+      }
+    } catch (error) {
+      feedback.textContent = error.message;
+    } finally {
+      save.disabled = false;
+    }
+  });
+  return form;
+}
+
+select.addEventListener('change', () => loadCampaign(0));
+byId('firstPage').addEventListener('click', () => loadCampaign(0));
+byId('nextPage').addEventListener('click', () => loadCampaign(nextCursor));
+byId('closeCampaign').addEventListener('click', async () => {
+  const url = campaignUrl();
+  byId('closeCampaign').disabled = true;
+  try {
+    await api(url + '/close', {});
+    if (campaignUrl() === url) await loadCampaign(cursor);
+  } catch (error) {
+    if (campaignUrl() === url) {
+      byId('closeCampaign').disabled = false;
+      status.textContent = error.message;
+    }
+  }
+});
+byId('campaignForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submit = form.querySelector('button');
+  submit.disabled = true;
+  try {
+    const data = await api('/api/campaigns', Object.fromEntries(new FormData(form)));
+    form.reset();
+    await loadCampaigns(data.id);
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+document.querySelector('[data-action="0"]').addEventListener('click', () => { show('overview'); });
+document.querySelector('[data-action="1"]').addEventListener('click', () => { show('import'); });
+document.querySelector('[data-action="2"]').addEventListener('click', () => { show('access');loadAccess(); });
+document.querySelector('[data-action="3"]').addEventListener('click', () => { show('hr'); });
+document.querySelector('[data-action="4"]').addEventListener('click', () => { show('reviews');loadCampaigns(); });
+document.querySelector('[data-action="5"]').addEventListener('click', () => { show('guide'); });
+document.querySelector('[data-action="6"]').addEventListener('click', () => { upload(); });
+document.querySelector('[data-action="7"]').addEventListener('click', () => { matchHR(); });
+refresh();
 </script></body></html>
