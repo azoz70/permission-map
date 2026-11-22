@@ -1,0 +1,10 @@
+role_id,group_id,user_id,direct
+r-erp-reader,g-finance,,false
+r-cloud-admin,g-it,,false
+r-vpn-user,g-it,,false
+r-vpn-user,g-dev,,false
+r-developer,g-dev,,false
+r-hr-reader,g-hr,,false
+r-erp-admin,,u-2001,true
+r-cloud-admin,,u-2007,true
+r-viewer,g-security,,false
