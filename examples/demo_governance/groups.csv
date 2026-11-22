@@ -1,0 +1,6 @@
+group_id,name,description
+g-finance,Finance,Finance users
+g-it,IT Operations,IT administrators and support
+g-hr,HR,Human resources
+g-dev,Engineering,Software developers
+g-security,Security,Security reviewers
