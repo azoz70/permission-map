@@ -39,6 +39,7 @@ dependencies = [
     "networkx>=3.3",
     "pyyaml>=6.0",
     "openpyxl>=3.1",
+    "defusedxml>=0.7",
 ]
 
 [project.optional-dependencies]
@@ -61,6 +62,9 @@ LinkedIn = "https://www.linkedin.com/in/abdulaziz-alshehri/"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["permission_map*"]
+
+[tool.setuptools.package-data]
+"permission_map.web" = ["index.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

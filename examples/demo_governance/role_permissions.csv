@@ -1,0 +1,8 @@
+role_id,permission_id
+r-erp-reader,p-erp-read
+r-erp-admin,p-erp-admin
+r-cloud-admin,p-aws-admin
+r-developer,p-github-push
+r-hr-reader,p-hr-read
+r-vpn-user,p-vpn-connect
+r-viewer,p-erp-read

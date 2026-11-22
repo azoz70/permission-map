@@ -1,0 +1,7 @@
+permission_id,resource_id,name,action
+p-erp-read,res-erp,erp.records,read
+p-erp-admin,res-erp,erp.configuration,admin
+p-aws-admin,res-aws,aws.console,admin
+p-github-push,res-github,github.repository,push
+p-hr-read,res-hr,hr.employee,read
+p-vpn-connect,res-vpn,vpn.session,connect

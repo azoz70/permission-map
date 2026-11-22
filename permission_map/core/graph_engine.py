@@ -7,6 +7,7 @@ permission to each user.
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import dataclass, field
 
 import networkx as nx
@@ -45,18 +46,21 @@ class UserAccess:
 class PermissionGraph:
     """A directed graph: user → group → role → permission."""
 
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: Database, connection=None) -> None:
         self.db = db
         self.graph: nx.DiGraph = nx.DiGraph()
         self._permission_info: dict[str, dict[str, str]] = {}
         self._role_type: dict[str, str] = {}
         self._user_status: dict[str, str] = {}
         self._user_flag: dict[str, bool] = {}
-        self._build()
+        self._build(connection)
 
-    def _build(self) -> None:
+    def _build(self, connection) -> None:
         graph = self.graph
-        with self.db.connection() as connection:
+        context = self.db.connection() if connection is None else nullcontext(connection)
+        with context as connection:
+            if not connection.in_transaction:
+                connection.execute("BEGIN")
             users = connection.execute(
                 "SELECT external_id, status, is_privileged FROM users"
             ).fetchall()

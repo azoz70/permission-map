@@ -1,0 +1,8 @@
+role_id,name,description,is_admin
+r-viewer,Viewer,Read-only access,false
+r-erp-reader,ERP Reader,Read ERP records,false
+r-erp-admin,ERP Administrator,Manage ERP financial configuration,true
+r-cloud-admin,Cloud Administrator,Full cloud administration,true
+r-developer,Developer,Push source code,false
+r-hr-reader,HR Reader,Read HR records,false
+r-vpn-user,VPN User,Connect to VPN,false

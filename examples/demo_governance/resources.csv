@@ -1,0 +1,6 @@
+resource_id,name,resource_type
+res-erp,ERP Finance,application
+res-aws,AWS Console,cloud
+res-github,GitHub,code
+res-hr,HR Portal,application
+res-vpn,Corporate VPN,network

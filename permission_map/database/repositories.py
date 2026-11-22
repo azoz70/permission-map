@@ -145,8 +145,7 @@ def add_memberships(db: Database, memberships: Sequence[Membership]) -> int:
         VALUES (?, ?, ?)
     """
     with db.connection() as connection:
-        connection.executemany(sql, rows)
-    return len(rows)
+        return connection.executemany(sql, rows).rowcount
 
 
 def add_role_assignments(db: Database, assignments: Sequence) -> int:
@@ -166,13 +165,15 @@ def add_role_assignments(db: Database, assignments: Sequence) -> int:
         for assignment in assignments
     ]
     sql = """
-        INSERT OR IGNORE INTO role_assignments
-            (role_id, group_id, user_id, direct, source)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO role_assignments (role_id, group_id, user_id, direct, source)
+        SELECT ?1, ?2, ?3, ?4, ?5
+        WHERE NOT EXISTS (
+            SELECT 1 FROM role_assignments
+            WHERE role_id = ?1 AND group_id IS ?2 AND user_id IS ?3
+        )
     """
     with db.connection() as connection:
-        connection.executemany(sql, rows)
-    return len(rows)
+        return connection.executemany(sql, rows).rowcount
 
 
 def add_role_permissions(db: Database, links: Sequence) -> int:
@@ -189,8 +190,7 @@ def add_role_permissions(db: Database, links: Sequence) -> int:
         VALUES (?, ?)
     """
     with db.connection() as connection:
-        connection.executemany(sql, rows)
-    return len(rows)
+        return connection.executemany(sql, rows).rowcount
 
 
 def persist(db: Database, entity: str, models: Sequence) -> int:
