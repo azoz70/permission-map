@@ -1,0 +1,9 @@
+user_id,name,email,department,job_title,status,is_privileged
+u-2001,Amal Hassan,amal.hassan@example.com,Finance,Accountant,active,false
+u-2002,Omar Saleh,omar.saleh@example.com,IT,System Administrator,active,true
+u-2003,Sara Nasser,sara.nasser@example.com,HR,HR Specialist,active,false
+u-2004,Fahad Ali,fahad.ali@example.com,Engineering,Developer,active,false
+u-2005,Lina Ahmed,lina.ahmed@example.com,Finance,Finance Manager,active,false
+u-2006,Khalid Mansour,khalid.mansour@example.com,IT,IT Support,terminated,false
+u-2007,Unknown Service,svc-unknown@example.com,Unknown,Service Account,active,false
+u-2008,Noura Ibrahim,noura.ibrahim@example.com,Security,Security Analyst,active,false
