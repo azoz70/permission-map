@@ -1,0 +1,8 @@
+employee_id,full_name,email,department,job_title,employment_status,manager
+EMP-001,Amal Hassan,amal.hassan@example.com,Finance,Accountant,active,Lina Ahmed
+EMP-002,Omar Saleh,omar.saleh@example.com,IT,System Administrator,active,IT Director
+EMP-003,Sara Nasser,sara.nasser@example.com,HR,HR Specialist,active,HR Director
+EMP-004,Fahad Ali,fahad.ali@example.com,Engineering,Developer,active,Engineering Manager
+EMP-005,Lina Ahmed,lina.ahmed@example.com,Finance,Finance Manager,active,Finance Director
+EMP-006,Khalid Mansour,khalid.mansour@example.com,IT,IT Support,terminated,IT Director
+EMP-008,Noura Ibrahim,noura.ibrahim@example.com,Security,Security Analyst,active,Security Manager
