@@ -15,6 +15,7 @@ from permission_map.core.graph_engine import PermissionGraph
 from permission_map.core.normalizer import FIELDS
 from permission_map.database.db import get_database
 from permission_map.importers.csv_importer import import_csv
+from permission_map.web.governance import access_inventory, reconcile_hr
 
 STATIC = Path(__file__).with_name("index.html")
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
@@ -48,6 +49,11 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/":
             return self.respond(200, STATIC.read_bytes(), "text/html")
+        if path == "/api/access":
+            try:
+                return self.reply_json(200, {"users": access_inventory(get_database())})
+            except Exception:
+                return self.reply_json(500, {"error": "Access inventory failed"})
         if path == "/api/summary":
             try:
                 return self.reply_json(200, summary())
@@ -61,7 +67,7 @@ class Handler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin", "")
         if origin not in {"http://127.0.0.1:8765", "http://localhost:8765"}:
             return self.reply_json(403, {"error": "Same-origin request required"})
-        if urlparse(self.path).path != "/api/import":
+        if urlparse(self.path).path not in {"/api/import", "/api/hr-reconcile"}:
             return self.reply_json(404, {"error": "Not found"})
         if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
             return self.reply_json(415, {"error": "Expected JSON"})
@@ -73,6 +79,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply_json(413, {"error": "Request must be under 2 MB"})
         try:
             body = json.loads(self.rfile.read(size))
+            if urlparse(self.path).path == "/api/hr-reconcile":
+                content = body.get("content")
+                if not isinstance(content, str):
+                    return self.reply_json(400, {"error": "Invalid HR content"})
+                try:
+                    return self.reply_json(200, reconcile_hr(get_database(), content))
+                except ValueError as exc:
+                    return self.reply_json(422, {"error": str(exc)})
             entity = body.get("entity")
             content = body.get("content")
             if entity not in FIELDS or not isinstance(content, str):
